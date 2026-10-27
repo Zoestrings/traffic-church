@@ -10,7 +10,8 @@ function getPublicBaseUrl(req) {
     return process.env.PUBLIC_BASE_URL.replace(/\/$/, '');
   }
   if (req && req.headers && req.headers.host && !req.headers.host.includes('localhost')) {
-    return `${req.protocol || 'http'}://${req.headers.host}`;
+    const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : (req.protocol || 'https'));
+    return `${proto}://${req.headers.host}`;
   }
   return process.env.PUBLIC_BASE_URL ? process.env.PUBLIC_BASE_URL.replace(/\/$/, '') : 'http://localhost:3000';
 }

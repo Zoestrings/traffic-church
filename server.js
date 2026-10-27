@@ -7,12 +7,21 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for reverse proxies (Render, Railway, Cloudflare, etc.) to detect https and client IPs
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// CORS configuration supporting production domains and local development
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) 
+  : true;
+
 app.use(cors({
-  origin: true,
+  origin: allowedOrigins,
   credentials: true
 }));
 

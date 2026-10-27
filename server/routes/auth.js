@@ -64,10 +64,11 @@ router.post('/login', async (req, res) => {
     );
 
     // Set HTTP-Only Cookie
+    const isProd = process.env.NODE_ENV === 'production';
     res.cookie('auth_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? (process.env.COOKIE_SAMESITE || 'lax') : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -119,7 +120,12 @@ router.get('/me', authenticate, async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('auth_token');
+  const isProd = process.env.NODE_ENV === 'production';
+  res.clearCookie('auth_token', {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? (process.env.COOKIE_SAMESITE || 'lax') : 'lax'
+  });
   return res.json({ message: 'Signed out successfully' });
 });
 
