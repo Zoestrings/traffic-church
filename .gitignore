@@ -1,0 +1,23 @@
+# Environment Variables (CRITICAL: Never commit database credentials)
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Neon CLI Local State
+.neon
+
+# Logs & Runtime
+*.log
+.pids
+*.pid
+*.seed
+
+# OS metadata
+.DS_Store
+Thumbs.db

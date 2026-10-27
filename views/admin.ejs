@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Church ID & Traffic Marshal Admin</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .badge-gold {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .badge-red {
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: 700;
+    }
+    .badge-green {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .section-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .section-heading {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #1a3c7a;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .form-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 600px) {
+      .form-row { flex-direction: column; gap: 6px; }
+    }
+    .toggle-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #ffffff;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+    .toggle-label input {
+      accent-color: #1a3c7a;
+      width: 16px;
+      height: 16px;
+    }
+    .photo-upload-container {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .photo-drop-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .photo-drop-box:hover, .photo-drop-box.dragover {
+      border-color: #1a3c7a;
+      background: #f0f4fc;
+    }
+  </style>
+</head>
+<body>
+  <header class="admin-header">
+    <div>
+      <h1>Church Identity & Traffic System</h1>
+      <span style="font-size: 12px; opacity: 0.85;">Grace Chapel International &bull; Member, Marshal & Asset Control</span>
+    </div>
+    <div>
+      <span class="badge badge-green">Admin Authenticated</span>
+    </div>
+  </header>
+
+  <div class="admin-container">
+    <div class="grid-layout">
+      <!-- Add Member Form -->
+      <div>
+        <div class="card">
+          <h2 class="card-title">Register Member / Marshal</h2>
+          <form id="addPersonForm">
+            <div class="form-row">
+              <div style="flex: 1; min-width: 90px;">
+                <label for="title" style="font-size: 12px; font-weight: 600;">Title</label>
+                <select id="title" class="form-control">
+                  <option value="">None</option>
+                  <option value="Pastor">Pastor</option>
+                  <option value="Elder">Elder</option>
+                  <option value="Deacon">Deacon</option>
+                  <option value="Deaconess">Deaconess</option>
+                  <option value="Bro">Bro</option>
+                  <option value="Sis">Sis</option>
+                  <option value="Mr">Mr</option>
+                  <option value="Mrs">Mrs</option>
+                  <option value="Dr">Dr</option>
+                </select>
+              </div>
+              <div style="flex: 1.5;">
+                <label for="firstName" style="font-size: 12px; font-weight: 600;">First Name *</label>
+                <input type="text" id="firstName" class="form-control" placeholder="e.g. John" required />
+              </div>
+              <div style="flex: 1.5;">
+                <label for="lastName" style="font-size: 12px; font-weight: 600;">Last Name *</label>
+                <input type="text" id="lastName" class="form-control" placeholder="e.g. Adeyemi" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="preferredName">Rank</label>
+              <input type="text" id="preferredName" class="form-control" placeholder="e.g. Commander, Chief Marshal, Senior Officer" />
+            </div>
+
+            <div class="form-row">
+              <div style="flex: 1;">
+                <label for="membershipStatus" style="font-size: 12px; font-weight: 600;">Status</label>
+                <select id="membershipStatus" class="form-control">
+                  <option value="member">Member</option>
+                  <option value="leader">Leader</option>
+                  <option value="clergy">Clergy</option>
+                  <option value="staff">Staff</option>
+                  <option value="guest">Guest</option>
+                </select>
+              </div>
+              <div style="flex: 1;">
+                <label for="memberSince" style="font-size: 12px; font-weight: 600;">Member Since</label>
+                <input type="number" id="memberSince" class="form-control" placeholder="e.g. 2014" min="1950" max="2099" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="publicRoles">Community Roles (comma separated)</label>
+              <input type="text" id="publicRoles" class="form-control" placeholder="e.g. Traffic Marshal, Ushering Dept" />
+            </div>
+
+            <div class="form-group">
+              <label for="bio">Short Bio (1-3 sentences)</label>
+              <textarea id="bio" class="form-control" rows="2" placeholder="Serving as Traffic Marshal since 2019..."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div style="flex: 1;">
+                <label for="phone" style="font-size: 12px; font-weight: 600;">Phone</label>
+                <input type="text" id="phone" class="form-control" placeholder="+234..." />
+              </div>
+              <div style="flex: 1;">
+                <label for="whatsapp" style="font-size: 12px; font-weight: 600;">WhatsApp</label>
+                <input type="text" id="whatsapp" class="form-control" placeholder="+234..." />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" class="form-control" placeholder="member@gracechapel.org" />
+            </div>
+
+            <div class="form-row">
+              <div style="flex: 1;">
+                <label for="altContactName" style="font-size: 12px; font-weight: 600;">Emergency Contact</label>
+                <input type="text" id="altContactName" class="form-control" placeholder="Contact Name" />
+              </div>
+              <div style="flex: 1;">
+                <label for="altContactPhone" style="font-size: 12px; font-weight: 600;">Emergency Phone</label>
+                <input type="text" id="altContactPhone" class="form-control" placeholder="Phone number" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="photoFile" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">
+                Upload Photo from Device
+              </label>
+              <div class="photo-upload-container">
+                <div id="photoPreviewWrapper" style="display: none; text-align: center; margin-bottom: 10px;">
+                  <img id="imagePreview" src="" alt="Preview" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #1a3c7a; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: inline-block;" />
+                  <div style="margin-top: 6px;">
+                    <button type="button" id="removePhotoBtn" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; font-size: 11px; font-weight: 600; padding: 4px 12px; cursor: pointer;">
+                      ✕ Remove Photo
+                    </button>
+                  </div>
+                </div>
+
+                <input type="file" id="photoFile" name="photo" accept="image/*" class="form-control" style="padding: 10px; background: #ffffff; cursor: pointer;" />
+                <span style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">
+                  Select a photo from your phone or computer (JPG, PNG, WebP)
+                </span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px;">Create Member ID & QR</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- People Table -->
+      <div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h2 class="card-title" style="margin: 0; border: none; padding: 0;">Registered Members (<%= people.length %>)</h2>
+            <button class="btn btn-secondary btn-sm" onclick="window.location.reload()">Refresh</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>QR</th>
+                  <th>Member</th>
+                  <th>Roles & Status</th>
+                  <th>Contact</th>
+                  <th>Card Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (people && people.length > 0) { %>
+                  <% people.forEach(p => { %>
+                    <tr>
+                      <td>
+                        <a href="/api/people/<%= p.id %>/qr" target="_blank" title="View / download PNG QR">
+                          <img class="qr-thumb" src="/api/people/<%= p.id %>/qr" alt="QR" />
+                        </a>
+                      </td>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <img
+                            class="user-avatar-small"
+                            src="<%= p.photo_url || 'https://via.placeholder.com/112?text=%20' %>"
+                            alt=""
+                            onerror="this.onerror=null; this.src='https://via.placeholder.com/112?text=%20';"
+                          />
+                          <div>
+                            <strong><%= (p.title && !p.full_name.startsWith(p.title)) ? p.title + ' ' : '' %><%= p.full_name %></strong>
+                            <% if (p.preferred_name) { %>
+                              <div style="font-size: 11px; font-weight: 700; color: #1a3c7a;">Rank: <%= p.preferred_name %></div>
+                            <% } %>
+                            <div class="text-muted"><%= p.membership_status %> <%= p.member_since ? '· Since ' + p.member_since : '' %></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div><%= p.public_roles || 'Member' %></div>
+                      </td>
+                      <td>
+                        <div><%= p.phone || p.whatsapp || p.email || '—' %></div>
+                      </td>
+                      <td>
+                        <% if (p.lost_card_active) { %>
+                          <span class="badge badge-red">⚠ LOST</span>
+                        <% } else { %>
+                          <span class="badge badge-green">Active</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                          <a href="/p/<%= p.profile_token %>" target="_blank" class="btn btn-secondary btn-sm">Profile &nearr;</a>
+                          <button class="btn btn-primary btn-sm" data-person-id="<%= p.id %>" onclick="openManageModal(this.dataset.personId)">Manage</button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="6" style="text-align: center; padding: 24px; color: #94a3b8;">
+                      No members registered yet. Fill out the form on the left to create the first card.
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Modal -->
+  <div class="modal-backdrop" id="manageModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalMemberName" style="font-size: 18px; font-weight: 700; color: #0f1e3d;">Manage Identity Card</h3>
+          <span class="text-muted" id="modalMemberId"></span>
+        </div>
+        <button class="modal-close" onclick="closeManageModal()">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <a id="modalPublicLink" href="#" target="_blank" class="btn btn-secondary btn-sm" style="display: inline-block;">
+          View Public Profile Page &nearr;
+        </a>
+      </div>
+
+      <!-- Lost Card Toggle -->
+      <div class="section-box" style="border-left: 4px solid #8a1c1c;">
+        <div class="section-heading" style="color: #8a1c1c;">
+          <span>⚠ Lost Card Recovery Banner</span>
+          <span id="lostStatusBadge" class="badge"></span>
+        </div>
+        <form id="lostCardForm">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; cursor: pointer;">
+            <input type="checkbox" id="lostCardActive" style="width: 16px; height: 16px; accent-color: #8a1c1c;" />
+            Flag card as LOST (Displays urgent return banner on QR scan)
+          </label>
+          <div class="form-group" style="margin-bottom: 8px;">
+            <textarea id="lostCardMessage" class="form-control" rows="2" placeholder="Custom return instruction (e.g. Please bring to church security post or call +234...)"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="background: #8a1c1c;">Save Lost Card Status</button>
+        </form>
+      </div>
+
+      <!-- Privacy Flags -->
+      <div class="section-box">
+        <div class="section-heading">Contact & Information Privacy (Reveal Controls)</div>
+        <form id="privacyForm">
+          <div class="toggle-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="showPhone" /> Show Phone on Reveal
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="showWhatsapp" /> Show WhatsApp on Reveal
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="showEmail" /> Show Email on Reveal
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="showHoldings" /> Show Issued Items
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Update Privacy Flags</button>
+        </form>
+      </div>
+
+      <!-- Assemblies / Memberships -->
+      <div class="section-box">
+        <div class="section-heading">Assembly Affiliations</div>
+        <div id="modalMembershipsList" style="margin-bottom: 12px;"></div>
+
+        <form id="addMembershipForm" class="form-row" style="margin: 0;">
+          <select id="modalCompanySelect" class="form-control" style="flex: 1;" required>
+            <option value="">Select Assembly...</option>
+          </select>
+          <input type="text" id="membershipRole" class="form-control" placeholder="Role (e.g. Traffic Marshal)" style="flex: 1;" required />
+          <input type="text" id="membershipDepartment" class="form-control" placeholder="Department (e.g. Ushering)" style="flex: 1;" />
+          <button type="submit" class="btn btn-primary btn-sm" style="white-space: nowrap;">+ Add Affiliation</button>
+        </form>
+      </div>
+
+      <!-- Items Issued / Holdings -->
+      <div class="section-box">
+        <div class="section-heading">Issued Items & Gear (Hi-Vis, Radios, Tools)</div>
+        <div id="modalHoldingsList" style="margin-bottom: 12px;"></div>
+
+        <form id="addHoldingForm" style="display: flex; flex-direction: column; gap: 8px;">
+          <select id="holdingMembershipSelect" class="form-control" required>
+            <option value="">Select Affiliation to Assign Under...</option>
+          </select>
+          <div class="form-row" style="margin: 0;">
+            <input type="text" id="itemName" class="form-control" placeholder="Item Name (e.g. Hi-Vis Vest)" style="flex: 2;" required />
+            <input type="text" id="itemType" class="form-control" placeholder="Type (Gear/Radio)" style="flex: 1;" />
+            <input type="text" id="serialNumber" class="form-control" placeholder="Serial (e.g. VST-0042)" style="flex: 1;" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="align-self: flex-start;">+ Assign Gear</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activePersonId = null;
+    let companiesList = [];
+
+    // Load available companies / assemblies
+    async function loadCompanies() {
+      try {
+        const res = await fetch('/api/companies');
+        if (res.ok) {
+          companiesList = await res.json();
+          const sel = document.getElementById('modalCompanySelect');
+          sel.innerHTML = '<option value="">Select Assembly...</option>';
+          companiesList.forEach(c => {
+            sel.innerHTML += `<option value="${c.id}">${c.name} (${c.code})</option>`;
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadCompanies();
+
+    // Photo Upload from Device Preview
+    const photoFileInput = document.getElementById('photoFile');
+    const photoPreviewWrapper = document.getElementById('photoPreviewWrapper');
+    const imagePreview = document.getElementById('imagePreview');
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+
+    photoFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          imagePreview.src = ev.target.result;
+          photoPreviewWrapper.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    removePhotoBtn.addEventListener('click', () => {
+      photoFileInput.value = '';
+      imagePreview.src = '';
+      photoPreviewWrapper.style.display = 'none';
+    });
+
+    // Add Person Form Submit (Multipart / FormData)
+    document.getElementById('addPersonForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData();
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const fullName = `${firstName} ${lastName}`.trim();
+      formData.append('title', document.getElementById('title').value);
+      formData.append('firstName', firstName);
+      formData.append('lastName', lastName);
+      formData.append('fullName', fullName);
+      formData.append('preferredName', document.getElementById('preferredName').value);
+      formData.append('membershipStatus', document.getElementById('membershipStatus').value);
+      formData.append('memberSince', document.getElementById('memberSince').value);
+      formData.append('publicRoles', document.getElementById('publicRoles').value);
+      formData.append('bio', document.getElementById('bio').value);
+      formData.append('phone', document.getElementById('phone').value);
+      formData.append('whatsapp', document.getElementById('whatsapp').value);
+      formData.append('email', document.getElementById('email').value);
+      formData.append('altContactName', document.getElementById('altContactName').value);
+      formData.append('altContactPhone', document.getElementById('altContactPhone').value);
+
+      if (photoFileInput.files && photoFileInput.files[0]) {
+        formData.append('photo', photoFileInput.files[0]);
+      }
+
+      try {
+        const res = await fetch('/api/people', {
+          method: 'POST',
+          body: formData
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          const err = await res.json();
+          alert('Error: ' + (err.error || 'Failed to register member'));
+        }
+      } catch (err) {
+        alert('Network error while saving member');
+      }
+    });
+
+    // Open Manage Modal
+    async function openManageModal(personId) {
+      activePersonId = personId;
+      document.getElementById('manageModal').classList.add('open');
+      await refreshModalData();
+    }
+
+    function closeManageModal() {
+      document.getElementById('manageModal').classList.remove('open');
+      activePersonId = null;
+    }
+
+    async function refreshModalData() {
+      if (!activePersonId) return;
+
+      try {
+        const res = await fetch(`/api/people/${activePersonId}/details`);
+        if (!res.ok) throw new Error('Failed to load member details');
+        const data = await res.json();
+        const p = data.person;
+
+        document.getElementById('modalMemberName').innerText = (p.title && !p.full_name.startsWith(p.title) ? p.title + ' ' : '') + p.full_name;
+        document.getElementById('modalMemberId').innerText = `ID #${p.id} · Token: ${p.profile_token}`;
+        document.getElementById('modalPublicLink').href = `/p/${p.profile_token}`;
+
+        // Lost card
+        document.getElementById('lostCardActive').checked = !!p.lost_card_active;
+        document.getElementById('lostCardMessage').value = p.lost_card_message || '';
+        const badge = document.getElementById('lostStatusBadge');
+        if (p.lost_card_active) {
+          badge.className = 'badge badge-red';
+          badge.innerText = 'Card Currently Flagged as Lost';
+        } else {
+          badge.className = 'badge badge-green';
+          badge.innerText = 'Card In Good Standing';
+        }
+
+        // Privacy checkboxes
+        document.getElementById('showPhone').checked = p.show_phone !== false;
+        document.getElementById('showWhatsapp').checked = p.show_whatsapp !== false;
+        document.getElementById('showEmail').checked = p.show_email !== false;
+        document.getElementById('showHoldings').checked = p.show_holdings !== false;
+
+        // Render Memberships
+        const memList = document.getElementById('modalMembershipsList');
+        const holdMemSel = document.getElementById('holdingMembershipSelect');
+
+        if (data.memberships && data.memberships.length > 0) {
+          memList.innerHTML = data.memberships.map(m => `
+            <div class="item-row">
+              <div>
+                <strong>${m.company_name}</strong>
+                <div class="text-muted">${[m.role, m.department].filter(Boolean).join(' · ')}</div>
+              </div>
+              <span class="badge badge-gold">Active</span>
+            </div>
+          `).join('');
+
+          holdMemSel.innerHTML = '<option value="">Select Affiliation to Assign Under...</option>' +
+            data.memberships.map(m => `
+              <option value="${m.id}">${m.company_name} — ${m.role || 'Member'}</option>
+            `).join('');
+          holdMemSel.disabled = false;
+        } else {
+          memList.innerHTML = '<div class="text-muted">No assembly affiliations yet. Add one below.</div>';
+          holdMemSel.innerHTML = '<option value="">Add an affiliation first</option>';
+          holdMemSel.disabled = true;
+        }
+
+        // Render Holdings
+        const holdList = document.getElementById('modalHoldingsList');
+        if (data.holdings && data.holdings.length > 0) {
+          holdList.innerHTML = data.holdings.map(h => `
+            <div class="item-row">
+              <div>
+                <strong>${h.item_name}</strong>
+                ${h.item_type ? `<span class="badge">${h.item_type}</span>` : ''}
+                ${h.serial_number ? `<span class="text-muted"> &bull; SN: ${h.serial_number}</span>` : ''}
+                <div class="text-muted">${h.company_name}</div>
+              </div>
+              <span class="badge badge-green">${h.status || 'held'}</span>
+            </div>
+          `).join('');
+        } else {
+          holdList.innerHTML = '<div class="text-muted">No gear or items issued yet.</div>';
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Save Lost Card Form
+    document.getElementById('lostCardForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!activePersonId) return;
+
+      const active = document.getElementById('lostCardActive').checked;
+      const message = document.getElementById('lostCardMessage').value;
+
+      const res = await fetch(`/api/people/${activePersonId}/lost-card`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active, message })
+      });
+      if (res.ok) {
+        alert('Lost card status saved.');
+        await refreshModalData();
+      } else {
+        alert('Failed to update lost card status');
+      }
+    });
+
+    // Save Privacy Form
+    document.getElementById('privacyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!activePersonId) return;
+
+      const showPhone = document.getElementById('showPhone').checked;
+      const showWhatsapp = document.getElementById('showWhatsapp').checked;
+      const showEmail = document.getElementById('showEmail').checked;
+      const showHoldings = document.getElementById('showHoldings').checked;
+
+      const res = await fetch(`/api/people/${activePersonId}/privacy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showPhone, showWhatsapp, showEmail, showHoldings })
+      });
+      if (res.ok) {
+        alert('Privacy settings saved.');
+        await refreshModalData();
+      } else {
+        alert('Failed to update privacy settings');
+      }
+    });
+
+    // Add Membership Submit
+    document.getElementById('addMembershipForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!activePersonId) return;
+
+      const companyId = document.getElementById('modalCompanySelect').value;
+      const role = document.getElementById('membershipRole').value;
+      const department = document.getElementById('membershipDepartment').value;
+
+      const res = await fetch('/api/memberships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ personId: activePersonId, companyId, role, department })
+      });
+      if (res.ok) {
+        document.getElementById('membershipRole').value = '';
+        document.getElementById('membershipDepartment').value = '';
+        await refreshModalData();
+      } else {
+        alert('Failed to add affiliation');
+      }
+    });
+
+    // Add Holding Submit
+    document.getElementById('addHoldingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const membershipId = document.getElementById('holdingMembershipSelect').value;
+      const itemName = document.getElementById('itemName').value;
+      const itemType = document.getElementById('itemType').value;
+      const serialNumber = document.getElementById('serialNumber').value;
+
+      if (!membershipId) {
+        alert('Please select an affiliation first');
+        return;
+      }
+
+      const res = await fetch('/api/holdings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ membershipId, itemName, itemType, serialNumber })
+      });
+      if (res.ok) {
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemType').value = '';
+        document.getElementById('serialNumber').value = '';
+        await refreshModalData();
+      } else {
+        alert('Failed to assign item');
+      }
+    });
+
+    document.getElementById('manageModal').addEventListener('click', (e) => {
+      if (e.target.id === 'manageModal') closeManageModal();
+    });
+  </script>
+</body>
+</html>

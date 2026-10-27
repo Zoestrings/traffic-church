@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title><%= (person.title && !person.full_name.startsWith(person.title)) ? person.title + ' ' : '' %><%= person.full_name %> - Identity Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0f1e3d;
+    --navy-light:#1a2f5c;
+    --gold:#c9a227;
+    --gold-soft:#e7d9a8;
+    --ink:#1a1a1a;
+    --muted:#6b6b6b;
+    --line:#eae6da;
+    --bg:#f7f5ef;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:var(--ink);min-height:100vh}
+  .card{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;
+        box-shadow:0 8px 40px rgba(15,30,61,.08)}
+  .cover{height:140px;background:
+    radial-gradient(circle at 20% 30%,var(--navy-light),var(--navy) 60%),
+    linear-gradient(135deg,var(--gold) 0%,transparent 40%);position:relative}
+  .cover::after{content:"";position:absolute;inset:0;
+    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><path d='M0 0h40v40H0z' fill='none'/><circle cx='20' cy='20' r='1' fill='%23ffffff22'/></svg>")}
+  .photo-wrap{margin-top:-56px;text-align:center;position:relative;z-index:2}
+  .photo{width:112px;height:112px;border-radius:50%;object-fit:cover;
+         border:4px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,.15);background:#ddd;display:inline-block}
+  h1{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;
+     font-size:28px;text-align:center;margin:14px 16px 4px;color:var(--navy);
+     letter-spacing:.2px;line-height:1.2}
+  .subtitle{text-align:center;color:var(--muted);font-size:14px;margin:0 0 4px}
+  .badge-verified{display:inline-flex;gap:6px;align-items:center;background:var(--gold-soft);
+    color:#5a4a12;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;
+    margin:8px auto;justify-content:center}
+  .center{text-align:center}
+  .body{padding:0 22px 40px}
+  .section-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--gold);font-weight:600;margin:26px 0 10px;
+    border-bottom:1px solid var(--line);padding-bottom:6px}
+  .bio{font-size:15px;line-height:1.6;color:#333;margin:0}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{background:#f3f1e8;color:var(--navy);padding:6px 12px;border-radius:20px;
+    font-size:13px;font-weight:500}
+  .row{display:flex;justify-content:space-between;align-items:center;
+    padding:12px 14px;background:#faf8f3;border-radius:10px;margin-bottom:8px;font-size:14px}
+  .row b{font-weight:600;color:var(--navy)}
+  .row .muted{color:var(--muted);font-size:12px;margin-top:2px}
+  .lost-banner{background:#8a1c1c;color:#fff;padding:16px 18px;border-radius:12px;
+    margin:20px 0;font-size:14px;line-height:1.5;box-shadow:0 4px 12px rgba(138,28,28,0.2)}
+  .lost-banner strong{display:block;font-size:15px;margin-bottom:4px}
+  .btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;
+    font-size:15px;font-weight:600;cursor:pointer;text-align:center;
+    text-decoration:none;margin-bottom:10px;transition:all .2s ease}
+  .btn:active{transform:scale(0.99)}
+  .btn-primary{background:var(--navy);color:#fff}
+  .btn-gold{background:var(--gold);color:var(--navy)}
+  .btn-reveal{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+  .reveal-box{background:#faf8f3;border-radius:12px;padding:6px;margin-top:8px;display:none}
+  .reveal-box.show{display:block}
+  .reveal-box a{display:flex;justify-content:space-between;align-items:center;
+    padding:12px 14px;text-decoration:none;color:var(--navy);font-weight:600;
+    border-bottom:1px solid var(--line);font-size:14px}
+  .reveal-box a:last-child{border-bottom:none}
+  .footer{text-align:center;font-size:11px;color:var(--muted);padding:24px 0 12px;letter-spacing:.5px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="cover"></div>
+
+  <div class="photo-wrap">
+    <img
+      class="photo"
+      src="<%= person.photo_url || 'https://via.placeholder.com/112?text=%20' %>"
+      alt="<%= person.full_name %>"
+      onerror="this.onerror=null; this.src='https://via.placeholder.com/112?text=%20';"
+    />
+  </div>
+
+  <h1><%= (person.title && !person.full_name.startsWith(person.title)) ? person.title + ' ' : '' %><%= person.full_name %></h1>
+  <p class="subtitle"><%= person.membership_status === 'member' ? 'Member' :
+    (person.membership_status || '').replace(/^\w/, c=>c.toUpperCase()) %>
+    <%= person.member_since ? '· Member since ' + person.member_since : '' %></p>
+
+  <div class="center">
+    <span class="badge-verified">✦ Verified by <%= churchName %></span>
+  </div>
+
+  <% if (person.preferred_name) { %>
+    <div class="center" style="margin-top: 2px;">
+      <span style="display: inline-block; background: #0f1e3d; color: #c9a227; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 12px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid #c9a227;">
+        Rank: <%= person.preferred_name %>
+      </span>
+    </div>
+  <% } %>
+
+  <div class="body">
+
+    <% if (person.lost_card_active) { %>
+      <div class="lost-banner">
+        <strong>⚠ This card was reported lost</strong>
+        <%= person.lost_card_message || 'Please contact the owner or church office to return it.' %>
+      </div>
+    <% } %>
+
+    <% if (person.bio) { %>
+      <div class="section-title">About</div>
+      <p class="bio"><%= person.bio %></p>
+    <% } %>
+
+    <% if (person.public_roles) { %>
+      <div class="section-title">Role in the Community</div>
+      <div class="chips">
+        <% person.public_roles.split(',').forEach(r => { %>
+          <% if (r.trim()) { %>
+            <span class="chip"><%= r.trim() %></span>
+          <% } %>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (memberships && memberships.length) { %>
+      <div class="section-title">Assemblies</div>
+      <% memberships.forEach(m => { %>
+        <div class="row">
+          <div>
+            <b><%= m.company_name %></b>
+            <div class="muted">
+              <%= [m.role, m.department].filter(Boolean).join(' · ') %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+
+    <% if (showHoldings && holdings && holdings.length) { %>
+      <div class="section-title">Items Issued</div>
+      <% holdings.forEach(h => { %>
+        <div class="row">
+          <div>
+            <b><%= h.item_name %></b>
+            <div class="muted"><%= h.company_name %></div>
+          </div>
+          <% if (h.serial_number) { %>
+            <span class="muted"><%= h.serial_number %></span>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } %>
+
+    <div class="section-title">Contact</div>
+    <button class="btn btn-reveal" id="revealBtn" onclick="reveal()">🔒 Reveal contact details</button>
+
+    <div class="reveal-box" id="revealBox"></div>
+
+    <div class="section-title">Found this card?</div>
+    <a class="btn btn-gold" onclick="foundCard()">📞 I found this card — return it</a>
+
+    <div class="footer">
+      <%= churchName %> · GCI-<%= person.member_since || '—' %><br>
+      ID Token · <%= person.profile_token.slice(0,8).toUpperCase() %>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function reveal() {
+    try {
+      const r = await fetch(`/p/<%= person.profile_token %>/reveal`, { method: 'POST' });
+      const d = await r.json();
+      let html = '';
+      if (d.phone) html += `<a href="tel:${d.phone}"><span>📞 Call</span><span>${d.phone}</span></a>`;
+      if (d.whatsapp) html += `<a href="https://wa.me/${d.whatsapp.replace(/\\D/g,'')}" target="_blank"><span>💬 WhatsApp</span><span>${d.whatsapp}</span></a>`;
+      if (d.email) html += `<a href="mailto:${d.email}"><span>✉ Email</span><span>${d.email}</span></a>`;
+      if (d.altContact && d.altContact.phone) {
+        html += `<a href="tel:${d.altContact.phone}"><span>🆘 ${d.altContact.name || 'Emergency Contact'}</span><span>${d.altContact.phone}</span></a>`;
+      }
+      if (!html) html = '<a><span style="color:var(--muted)">No public contact details permitted</span></a>';
+      const box = document.getElementById('revealBox');
+      box.innerHTML = html;
+      box.classList.add('show');
+      const btn = document.getElementById('revealBtn');
+      if (btn) btn.style.display = 'none';
+      return d;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function foundCard() {
+    // Opens reveal box + smoothly scrolls to it
+    reveal().then(() => {
+      const box = document.getElementById('revealBox');
+      if (box) {
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
+</script>
+</body>
+</html>
