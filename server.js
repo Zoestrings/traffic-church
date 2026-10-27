@@ -55,8 +55,17 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Enterprise Identity Platform server running on http://localhost:${PORT}`);
-  console.log(`Public Network Base URL: ${process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`}`);
+// Lightweight healthcheck endpoint for uptime monitoring & cold-start prevention
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Start Server locally or in non-serverless environments
+if (process.env.VERCEL !== '1' && require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Enterprise Identity Platform server running on http://localhost:${PORT}`);
+    console.log(`Public Network Base URL: ${process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`}`);
+  });
+}
+
+module.exports = app;

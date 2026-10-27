@@ -15,15 +15,20 @@ const state = {
 // --- API Client Helpers ---
 async function api(url, options = {}) {
   try {
+    const token = localStorage.getItem('auth_token');
+    const headers = {
+      'Accept': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    };
+
     const res = await fetch(url, {
       ...options,
-      headers: {
-        'Accept': 'application/json',
-        ...(options.headers || {})
-      }
+      headers
     });
 
     if (res.status === 401 && !url.includes('/api/auth/login')) {
+      localStorage.removeItem('auth_token');
       state.user = null;
       render();
       return null;
@@ -155,6 +160,10 @@ function renderLoginView(container) {
         body: JSON.stringify({ email, password })
       });
 
+      if (res && res.token) {
+        localStorage.setItem('auth_token', res.token);
+      }
+
       state.user = res.user;
       state.org = res.organisation;
       state.role = res.organisation.role;
@@ -265,6 +274,7 @@ function renderAppShell(container) {
 
 async function handleLogout() {
   await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  localStorage.removeItem('auth_token');
   state.user = null;
   render();
 }

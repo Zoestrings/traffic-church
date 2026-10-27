@@ -6,17 +6,8 @@ const multer = require('multer');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 
-// Setup photo upload storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '..', '..', 'public', 'uploads'));
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'id-photo-' + uniqueSuffix + ext);
-  }
-});
+// Setup photo upload storage (in-memory for serverless & cloud persistence)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -201,7 +192,7 @@ router.post(
 
       let photoUrl = req.body.photoUrl || null;
       if (req.file) {
-        photoUrl = '/uploads/' + req.file.filename;
+        photoUrl = `data:${req.file.mimetype || 'image/jpeg'};base64,${req.file.buffer.toString('base64')}`;
       }
 
       // Generate unique ID number for organization
@@ -323,7 +314,7 @@ router.put(
 
       let photoUrl = req.body.photoUrl;
       if (req.file) {
-        photoUrl = '/uploads/' + req.file.filename;
+        photoUrl = `data:${req.file.mimetype || 'image/jpeg'};base64,${req.file.buffer.toString('base64')}`;
       }
 
       const updateRes = await db.query(`
