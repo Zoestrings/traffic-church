@@ -12,6 +12,61 @@ const state = {
   stats: null
 };
 
+// --- Avatar & Visual Utilities ---
+function renderInitialsAvatar(name, size = 36) {
+  const safeName = (name || 'U').trim();
+  const parts = safeName.split(' ').filter(Boolean);
+  let initials = 'U';
+  if (parts.length >= 2) {
+    initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  } else if (parts.length === 1) {
+    initials = parts[0].substring(0, 2).toUpperCase();
+  }
+
+  const gradients = [
+    'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', // Sapphire
+    'linear-gradient(135deg, #065f46 0%, #10b981 100%)', // Emerald
+    'linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%)', // Violet
+    'linear-gradient(135deg, #9a3412 0%, #f97316 100%)', // Amber
+    'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)', // Teal
+    'linear-gradient(135deg, #831843 0%, #ec4899 100%)'  // Rose
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < safeName.length; i++) {
+    hash = (safeName.charCodeAt(i) + ((hash << 5) - hash)) | 0;
+  }
+  const bg = gradients[Math.abs(hash) % gradients.length];
+  const fontSize = Math.max(10, Math.floor(size * 0.38));
+
+  return `<div class="avatar-placeholder" style="width: ${size}px; height: ${size}px; background: ${bg}; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: var(--font-display); font-size: ${fontSize}px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 2px 5px rgba(0,0,0,0.08);">
+    ${initials}
+  </div>`;
+}
+
+function renderAvatar(photoUrl, name, size = 36) {
+  if (photoUrl && photoUrl.trim() && photoUrl !== '/uploads/default-avatar.png') {
+    const escapedName = (name || 'Personnel').replace(/"/g, '&quot;');
+    const jsEscapedName = (name || 'Personnel').replace(/'/g, "\\'");
+    return `
+      <img src="${photoUrl}" alt="${escapedName}" class="avatar-img" style="width: ${size}px; height: ${size}px; object-fit: cover;" onerror="this.outerHTML=renderInitialsAvatar('${jsEscapedName}', ${size})" />
+    `;
+  }
+  return renderInitialsAvatar(name, size);
+}
+
+function formatRelativeTime(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffSecs = Math.floor((now - date) / 1000);
+
+  if (diffSecs < 60) return 'Just now';
+  if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)}m ago`;
+  if (diffSecs < 86400) return `${Math.floor(diffSecs / 3600)}h ago`;
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 // --- API Client Helpers ---
 async function api(url, options = {}) {
   try {
@@ -223,16 +278,21 @@ function renderAppShell(container) {
 
         <div class="sidebar-footer">
           <div class="user-profile-badge">
-            <div class="user-avatar">${(state.user.fullName || 'U').substring(0, 1).toUpperCase()}</div>
+            <div class="user-avatar" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+              ${(state.user.fullName || 'U').substring(0, 1).toUpperCase()}
+            </div>
             <div style="overflow: hidden; max-width: 130px;">
-              <div style="font-size: 12px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-display);">
                 ${state.user.fullName}
               </div>
-              <div style="font-size: 10px; color: #94a3b8;">${state.role}</div>
+              <div style="font-size: 10.5px; color: #94a3b8; display: flex; align-items: center; gap: 4px; text-transform: capitalize;">
+                <span style="width: 5px; height: 5px; border-radius: 50%; background: #10b981;"></span>
+                ${state.role.replace('_', ' ')}
+              </div>
             </div>
           </div>
-          <button onclick="handleLogout()" title="Sign Out" style="background: none; border: none; color: #94a3b8; cursor: pointer;">
-            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          <button onclick="handleLogout()" title="Sign Out" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease;" onmouseover="this.style.color='#f43f5e'; this.style.background='rgba(244,63,94,0.1)'" onmouseout="this.style.color='#94a3b8'; this.style.background='rgba(255,255,255,0.06)'">
+            <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
           </button>
         </div>
       </aside>
@@ -241,21 +301,24 @@ function renderAppShell(container) {
       <main class="main-content">
         <header class="topbar">
           <div class="topbar-left">
-            <span style="font-size: 13px; font-weight: 600; color: var(--text-main);">
-              ${state.org.name}
-            </span>
-            <span style="color: var(--border-strong);">/</span>
-            <span style="font-size: 13px; color: var(--text-muted); text-transform: capitalize;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="display: inline-flex; width: 8px; height: 8px; border-radius: 50%; background: #2563eb;"></span>
+              <span style="font-size: 13.5px; font-weight: 700; color: #0f172a; font-family: var(--font-display);">
+                ${state.org.name || 'Grace Chapel International'}
+              </span>
+            </div>
+            <span style="color: #cbd5e1; font-weight: 300;">/</span>
+            <span style="font-size: 12px; color: #475569; font-weight: 600; text-transform: capitalize; background: #f1f5f9; padding: 2px 9px; border-radius: 6px; border: 1px solid #e2e8f0;">
               ${state.currentRoute.replace('-', ' ')}
             </span>
           </div>
           <div class="topbar-right">
-            <button class="btn btn-primary btn-sm" onclick="navigate('scan')">
-              <i data-lucide="scan" style="width: 14px; height: 14px;"></i> Scan Badge
+            <button class="btn btn-secondary btn-sm" onclick="navigate('scan')" style="border-color: #cbd5e1;">
+              <i data-lucide="scan" style="width: 14px; height: 14px; color: #2563eb;"></i> Quick Scan
             </button>
             ${['super_admin', 'identity_manager'].includes(state.role) ? `
-              <button class="btn btn-accent btn-sm" onclick="navigate('register')">
-                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Register Person
+              <button class="btn btn-primary btn-sm" onclick="navigate('register')">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Register Marshal
               </button>
             ` : ''}
           </div>
@@ -316,18 +379,34 @@ async function loadDashboardView(container) {
   container.innerHTML = `
     <div class="page-header">
       <div>
-        <h1 class="page-title">Identity Operations Dashboard</h1>
-        <div class="page-description">Real-time database metrics for credentials, verification activity, and member status.</div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <h1 class="page-title">Operations Command & ID Fleet</h1>
+          <span class="live-pulse-badge">
+            <span class="pulse-dot"></span> Live Fleet Synchronized
+          </span>
+        </div>
+        <div class="page-description">
+          ${state.org?.name || 'Grace Chapel International'} &bull; Traffic Safety & Identity Verification Directorate
+        </div>
       </div>
-      <div>
-        <button class="btn btn-secondary btn-sm" onclick="loadDashboardView(document.getElementById('pageContent'))">
-          <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Refresh Metrics
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="btn btn-secondary btn-sm" onclick="loadDashboardView(document.getElementById('pageContent'))" title="Refresh Live Data">
+          <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Refresh
+        </button>
+        ${['super_admin', 'identity_manager'].includes(state.role) ? `
+          <button class="btn btn-accent btn-sm" onclick="navigate('register')">
+            <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Register Marshal
+          </button>
+        ` : ''}
+        <button class="btn btn-primary btn-sm" onclick="navigate('scan')">
+          <i data-lucide="scan" style="width: 14px; height: 14px;"></i> Scan Terminal
         </button>
       </div>
     </div>
 
-    <div id="dashboardLoader" style="padding: 40px; text-align: center; color: var(--text-muted);">
-      Loading real-time database statistics...
+    <div id="dashboardLoader" style="padding: 60px 20px; text-align: center; color: var(--text-muted); font-family: var(--font-display);">
+      <div style="display: inline-block; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;"></div>
+      <div style="font-size: 13px; font-weight: 500;">Connecting to cloud identity telemetry...</div>
     </div>
   `;
   lucide.createIcons();
@@ -340,83 +419,161 @@ async function loadDashboardView(container) {
     container.innerHTML = `
       <div class="page-header">
         <div>
-          <h1 class="page-title">Identity Operations Dashboard</h1>
-          <div class="page-description">Real-time database metrics for credentials, verification activity, and member status.</div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+            <h1 class="page-title">Operations Command & ID Fleet</h1>
+            <span class="live-pulse-badge">
+              <span class="pulse-dot"></span> Live Fleet Synchronized
+            </span>
+          </div>
+          <div class="page-description">
+            ${state.org?.name || 'Grace Chapel International'} &bull; Traffic Safety & Biometric Verification Directorate
+          </div>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <button class="btn btn-secondary btn-sm" onclick="loadDashboardView(document.getElementById('pageContent'))">
-            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Refresh
+            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Sync
+          </button>
+          ${['super_admin', 'identity_manager'].includes(state.role) ? `
+            <button class="btn btn-accent btn-sm" onclick="navigate('register')">
+              <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Register Marshal
+            </button>
+          ` : ''}
+          <button class="btn btn-primary btn-sm" onclick="navigate('scan')">
+            <i data-lucide="scan" style="width: 14px; height: 14px;"></i> Scan Terminal
           </button>
         </div>
       </div>
 
-      <!-- Operational Stat Bar (Dense 4-Column Continuous Grid) -->
+      <!-- Sculpted Floating Metric Grid -->
       <div class="stat-grid">
+        <!-- Total Registered Personnel -->
         <div class="stat-card">
-          <div class="stat-label">Total Registered Personnel</div>
+          <div class="stat-card-top">
+            <div class="stat-label">Total Registered Marshals</div>
+            <div class="stat-icon-pill blue">
+              <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+            </div>
+          </div>
           <div class="stat-value">${m.totalIdentities}</div>
-          <div class="stat-sub">${m.activeIdentities} Active &bull; ${m.suspendedIdentities} Suspended</div>
+          <div class="stat-sub">
+            <span style="color: #059669; font-weight: 700;">● ${m.activeIdentities} Active</span>
+            <span style="color: #cbd5e1;">&bull;</span>
+            <span>${m.suspendedIdentities} Suspended</span>
+          </div>
         </div>
+
+        <!-- Active Field Credentials -->
         <div class="stat-card">
-          <div class="stat-label">Active Credentials</div>
-          <div class="stat-value" style="color: var(--status-active-text);">${m.activeCards}</div>
-          <div class="stat-sub">Valid In Field</div>
+          <div class="stat-card-top">
+            <div class="stat-label">Active Field Badges</div>
+            <div class="stat-icon-pill emerald">
+              <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+            </div>
+          </div>
+          <div class="stat-value" style="color: #059669;">${m.activeCards}</div>
+          <div class="stat-sub">
+            <span class="status-chip active" style="font-size: 11px; padding: 2px 8px;">
+              <span class="chip-dot"></span> Valid In Field
+            </span>
+          </div>
         </div>
+
+        <!-- Revoked / Voided Badges -->
         <div class="stat-card">
-          <div class="stat-label">Revoked / Replaced</div>
-          <div class="stat-value" style="color: var(--status-revoked-text);">${m.revokedCards}</div>
-          <div class="stat-sub">Voided Badges</div>
+          <div class="stat-card-top">
+            <div class="stat-label">Security Revocations</div>
+            <div class="stat-icon-pill rose">
+              <i data-lucide="shield-alert" style="width: 18px; height: 18px;"></i>
+            </div>
+          </div>
+          <div class="stat-value" style="color: #e11d48;">${m.revokedCards}</div>
+          <div class="stat-sub">
+            <span style="color: #e11d48; font-weight: 600;">
+              ${m.revokedCards > 0 ? `${m.revokedCards} Badges Voided / Cancelled` : 'Zero Revocation Flags'}
+            </span>
+          </div>
         </div>
+
+        <!-- 30-Day Verifications -->
         <div class="stat-card">
-          <div class="stat-label">30-Day Verifications</div>
+          <div class="stat-card-top">
+            <div class="stat-label">30-Day Verifications</div>
+            <div class="stat-icon-pill purple">
+              <i data-lucide="activity" style="width: 18px; height: 18px;"></i>
+            </div>
+          </div>
           <div class="stat-value">${m.totalScans30Days}</div>
-          <div class="stat-sub">${m.verifiedScans30Days} Authentic &bull; ${m.revokedScans30Days} Rejected</div>
+          <div class="stat-sub">
+            <span style="color: #059669; font-weight: 700;">${m.verifiedScans30Days} Valid</span>
+            <span style="color: #cbd5e1;">&bull;</span>
+            <span style="color: #e11d48; font-weight: 700;">${m.revokedScans30Days} Rejected</span>
+          </div>
         </div>
       </div>
 
-      <!-- Unified Command Console Panel (Combined Registry & Verification Feed) -->
+      <!-- Unified Dual Command Console Grid -->
       <div class="command-console-panel">
         <!-- Recently Registered Personnel -->
         <div class="console-panel-left">
           <div class="panel-heading">
-            <span>Recently Registered Personnel</span>
-            <a onclick="navigate('directory')" style="font-size: 11px; color: var(--text-muted); cursor: pointer; text-decoration: underline;">Full Registry &rarr;</a>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i data-lucide="id-card" style="width: 18px; height: 18px; color: #2563eb;"></i>
+              <span>Recently Registered Personnel</span>
+            </div>
+            <a onclick="navigate('directory')" style="font-size: 12px; font-weight: 600; color: #2563eb; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+              Full Directory &rarr;
+            </a>
           </div>
-          <div class="table-container" style="border: none;">
+          <div class="table-container">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Personnel</th>
+                  <th>Personnel & Rank</th>
                   <th>ID Number</th>
-                  <th>Branch / Dept</th>
-                  <th>Card Status</th>
+                  <th>Branch & Dept</th>
+                  <th>Credential</th>
+                  <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
               <tbody>
                 ${data.recentPeople.length > 0 ? data.recentPeople.map(p => `
                   <tr>
                     <td>
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="${p.photo_url || '/uploads/default-avatar.png'}" style="width: 28px; height: 32px; border-radius: 2px; object-fit: cover; border: 1px solid var(--border-color); background: #e5e7eb;" />
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="avatar-wrapper">
+                          ${renderAvatar(p.photo_url, p.full_name, 36)}
+                        </div>
                         <div>
-                          <div style="font-weight: 600; color: var(--text-main); font-size: 12.5px;">${p.title ? p.title + ' ' : ''}${p.full_name}</div>
-                          <div style="font-size: 10.5px; color: var(--text-muted); text-transform: uppercase;">${p.position || 'Member'}</div>
+                          <div style="font-weight: 700; color: #0f172a; font-size: 13px; font-family: var(--font-display);">
+                            ${p.title ? p.title + ' ' : ''}${p.full_name}
+                          </div>
+                          <div style="display: inline-block; font-size: 10px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 2px 7px; border-radius: 4px; margin-top: 3px; border: 1px solid #dbeafe;">
+                            ${p.position || 'Staff Marshal'}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td><span class="id-code">${p.id_number}</span></td>
                     <td>
-                      <div>${p.branch || 'Central'}</div>
-                      <div style="font-size: 10.5px; color: var(--text-muted);">${p.department || 'General'}</div>
+                      <span class="id-code">${p.id_number}</span>
                     </td>
                     <td>
-                      <span class="status-badge ${p.card_status === 'active' ? 'active' : (p.card_status === 'revoked' ? 'revoked' : 'neutral')}">
-                        ${p.card_status || 'Unissued'}
+                      <div style="font-weight: 600; color: #334155; font-size: 12.5px;">${p.branch || 'Central'}</div>
+                      <div style="font-size: 11px; color: var(--text-muted);">${p.department || 'Traffic Operations'}</div>
+                    </td>
+                    <td>
+                      <span class="status-chip ${p.card_status === 'active' ? 'active' : (p.card_status === 'revoked' ? 'revoked' : 'neutral')}">
+                        <span class="chip-dot"></span>
+                        ${(p.card_status || 'Unissued').toUpperCase()}
                       </span>
+                    </td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-secondary btn-sm" onclick="navigate('directory')" title="View in Directory" style="padding: 5px 9px;">
+                        <i data-lucide="arrow-up-right" style="width: 13px; height: 13px;"></i>
+                      </button>
                     </td>
                   </tr>
                 `).join('') : `
-                  <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">No personnel registered in database.</td></tr>
+                  <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 36px;">No personnel registered in database.</td></tr>
                 `}
               </tbody>
             </table>
@@ -426,27 +583,44 @@ async function loadDashboardView(container) {
         <!-- Recent Verification Activity Feed -->
         <div class="console-panel-right">
           <div class="panel-heading">
-            <span>Live Scan Activity</span>
-            <a onclick="navigate('history')" style="font-size: 11px; color: var(--text-muted); cursor: pointer; text-decoration: underline;">Audit Logs &rarr;</a>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i data-lucide="radio" style="width: 18px; height: 18px; color: #10b981;"></i>
+              <span>Live Scan Stream</span>
+            </div>
+            <a onclick="navigate('history')" style="font-size: 12px; font-weight: 600; color: #2563eb; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+              Audit Log &rarr;
+            </a>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            ${data.recentVerifications.length > 0 ? data.recentVerifications.map(v => `
-              <div style="display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--border-color);">
-                <div>
-                  <div style="font-size: 12px; font-weight: 600; color: var(--text-main);">
-                    ${v.person_name || 'Unrecognized Credential'}
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${data.recentVerifications.length > 0 ? data.recentVerifications.map(v => {
+              const isVerified = v.outcome === 'verified';
+              const isRevoked = v.outcome === 'revoked';
+              return `
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 10px 12px; border-radius: var(--radius-md); background: ${isVerified ? '#f8fafc' : (isRevoked ? '#fff1f2' : '#f8fafc')}; border: 1px solid ${isVerified ? '#f1f5f9' : (isRevoked ? '#fecdd3' : '#e2e8f0')}; transition: all 0.15s ease;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 32px; height: 32px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: ${isVerified ? '#ecfdf5' : (isRevoked ? '#fee2e2' : '#f1f5f9')}; color: ${isVerified ? '#059669' : (isRevoked ? '#e11d48' : '#64748b')}; flex-shrink: 0;">
+                      <i data-lucide="${isVerified ? 'shield-check' : (isRevoked ? 'shield-alert' : 'help-circle')}" style="width: 18px; height: 18px;"></i>
+                    </div>
+                    <div>
+                      <div style="font-size: 13px; font-weight: 700; color: #0f172a; font-family: var(--font-display);">
+                        ${v.person_name || 'Unrecognized Credential'}
+                      </div>
+                      <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
+                        ${v.id_number ? `<span style="font-family: var(--font-data); font-weight: 600; color: #475569;">${v.id_number}</span> &bull; ` : ''}
+                        <span>${formatRelativeTime(v.created_at)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div style="font-size: 11px; font-family: var(--font-data); color: var(--text-muted); margin-top: 2px;">
-                    ${v.id_number ? `${v.id_number} &bull; ` : ''}${new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
+                  <span class="status-chip ${isVerified ? 'active' : (isRevoked ? 'revoked' : 'neutral')}" style="font-size: 11px; padding: 2px 8px;">
+                    <span class="chip-dot"></span>
+                    ${v.outcome.toUpperCase()}
+                  </span>
                 </div>
-                <span class="status-badge ${v.outcome === 'verified' ? 'active' : (v.outcome === 'revoked' ? 'revoked' : 'neutral')}">
-                  ${v.outcome}
-                </span>
-              </div>
-            `).join('') : `
-              <div style="text-align: center; color: var(--text-muted); padding: 24px; font-size: 11px;">
-                No scans recorded in system yet.
+              `;
+            }).join('') : `
+              <div style="text-align: center; color: var(--text-muted); padding: 36px; font-size: 12px; font-family: var(--font-display);">
+                <i data-lucide="scan" style="width: 24px; height: 24px; margin-bottom: 8px; opacity: 0.5;"></i>
+                <div>No scans recorded in system yet.</div>
               </div>
             `}
           </div>
@@ -455,7 +629,13 @@ async function loadDashboardView(container) {
     `;
     lucide.createIcons();
   } catch (err) {
-    container.innerHTML = `<div class="status-badge revoked" style="padding: 16px; font-size: 12px;">Error loading dashboard: ${err.message}</div>`;
+    container.innerHTML = `
+      <div class="card" style="border-left: 4px solid #e11d48; padding: 20px;">
+        <div style="font-weight: 700; color: #e11d48; font-size: 14px; margin-bottom: 4px;">Telemetry Connection Error</div>
+        <div style="color: var(--text-muted); font-size: 12.5px;">${err.message}</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top: 12px;" onclick="loadDashboardView(document.getElementById('pageContent'))">Try Again</button>
+      </div>
+    `;
   }
 }
 
