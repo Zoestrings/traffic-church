@@ -44,6 +44,190 @@ async function generateIdNumber(client, orgId, prefix) {
   return `${prefix}-${year}-${String(nextSeq).padStart(3, '0')}`;
 }
 
+// POST /api/identities/register - Public / Member Self-Registration with Auto-Approval
+router.post('/register', upload.single('photo'), async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    let {
+      fullName,
+      full_name,
+      firstName,
+      first_name,
+      lastName,
+      last_name,
+      title,
+      email,
+      phone,
+      department,
+      branch = 'Main Sanctuary',
+      position = 'Member / Marshal',
+      emergencyContactName,
+      emergencyContactPhone,
+      bio
+    } = req.body;
+
+    const resolvedFullName = (fullName || full_name || `${firstName || first_name || ''} ${lastName || last_name || ''}`).trim();
+    if (!resolvedFullName) {
+      return res.status(400).json({ error: 'Full name is required.' });
+    }
+
+    // Photo processing: uploaded file or base64 photoUrl
+    let photoUrl = req.body.photoUrl || null;
+    if (req.file) {
+      photoUrl = `data:${req.file.mimetype || 'image/jpeg'};base64,${req.file.buffer.toString('base64')}`;
+    }
+
+    // Determine target organisation (authenticated or default tenant)
+    let orgId = req.organisation ? req.organisation.id : null;
+    let orgPrefix = req.organisation ? req.organisation.id_prefix : null;
+
+    if (!orgId) {
+      const orgRes = await client.query('SELECT id, id_prefix, name FROM organisations ORDER BY id ASC LIMIT 1');
+      if (orgRes.rows.length === 0) {
+        return res.status(500).json({ error: 'System organisation not configured.' });
+      }
+      orgId = orgRes.rows[0].id;
+      orgPrefix = orgRes.rows[0].id_prefix || 'GCI';
+    }
+
+    // Check for duplicate email if provided
+    if (email && email.trim()) {
+      const existing = await client.query(
+        'SELECT id, id_number FROM identities WHERE organisation_id = $1 AND LOWER(email) = LOWER($2)',
+        [orgId, email.trim()]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(409).json({
+          error: `A member record with this email already exists (ID: ${existing.rows[0].id_number}).`
+        });
+      }
+    }
+
+    // Begin Database Transaction for Atomic Registration & Card Issuance
+    await client.query('BEGIN');
+
+    // 1. Generate Permanent ID Number (e.g. GCI-2026-001)
+    const permanentId = await generateIdNumber(client, orgId, orgPrefix || 'GCI');
+
+    // 2. Insert Identity with AUTO-APPROVED status
+    const newPerson = await client.query(`
+      INSERT INTO identities (
+        organisation_id, id_number, full_name, first_name, last_name, title,
+        email, phone, department, branch, position, photo_url,
+        status, approval_status, emergency_contact_name, emergency_contact_phone, bio,
+        created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active', 'approved', $13, $14, $15, NOW(), NOW()
+      ) RETURNING *
+    `, [
+      orgId,
+      permanentId,
+      resolvedFullName,
+      (firstName || first_name || '').trim() || null,
+      (lastName || last_name || '').trim() || null,
+      (title || '').trim() || null,
+      (email || '').trim() || null,
+      (phone || '').trim() || null,
+      (department || 'General Assembly').trim(),
+      (branch || 'Main Sanctuary').trim(),
+      (position || 'Registered Member').trim(),
+      photoUrl,
+      (emergencyContactName || '').trim() || null,
+      (emergencyContactPhone || '').trim() || null,
+      (bio || '').trim() || null
+    ]);
+
+    const identity = newPerson.rows[0];
+
+    // 3. Generate Cryptographic QR Verification Token (48-char hex)
+    const secureToken = crypto.randomBytes(24).toString('hex');
+    const cardNumber = `CRD-${permanentId}-01`;
+    const issueDate = new Date();
+    const expiryDate = new Date();
+    expiryDate.setDate(issueDate.getDate() + 365); // 1 year validity
+
+    // 4. Issue First Active Physical / Digital ID Card
+    const newCard = await client.query(`
+      INSERT INTO id_cards (
+        identity_id, organisation_id, card_number, verification_token,
+        status, issue_date, expiry_date, is_current, created_at
+      ) VALUES (
+        $1, $2, $3, $4, 'active', $5, $6, TRUE, NOW()
+      ) RETURNING *
+    `, [
+      identity.id,
+      orgId,
+      cardNumber,
+      secureToken,
+      issueDate,
+      expiryDate
+    ]);
+
+    const card = newCard.rows[0];
+
+    // 5. Create Audit Trail Entry for Post-Audit Review
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
+    await client.query(`
+      INSERT INTO audit_logs (
+        organisation_id, user_id, action, record_type, record_id, change_summary, ip_address, created_at
+      ) VALUES (
+        $1, $2, 'MEMBER_AUTO_APPROVED', 'identity', $3, $4, $5, NOW()
+      )
+    `, [
+      orgId,
+      req.user ? req.user.id : null,
+      identity.id,
+      `Auto-approved self-registration for ${identity.full_name} (${identity.id_number}) & issued card ${cardNumber}`,
+      clientIp
+    ]);
+
+    // Commit Transaction
+    await client.query('COMMIT');
+
+    // Build Public Verification URL
+    const baseUrl = process.env.PUBLIC_BASE_URL 
+      ? process.env.PUBLIC_BASE_URL.replace(/\/$/, '')
+      : (req.headers.host ? `${req.secure ? 'https' : 'http'}://${req.headers.host}` : '');
+
+    const verificationUrl = `${baseUrl}/verify/${secureToken}`;
+
+    return res.status(201).json({
+      message: 'Registration successful. ID Card auto-approved and issued.',
+      identity: {
+        id: identity.id,
+        name: identity.full_name,
+        fullName: identity.full_name,
+        permanentId: identity.id_number,
+        id_number: identity.id_number,
+        title: identity.title,
+        department: identity.department,
+        branch: identity.branch,
+        position: identity.position,
+        photo_url: identity.photo_url,
+        approval_status: identity.approval_status,
+        status: identity.status
+      },
+      card: {
+        id: card.id,
+        number: card.card_number,
+        card_number: card.card_number,
+        verificationToken: card.verification_token,
+        verificationUrl: verificationUrl,
+        issueDate: card.issue_date,
+        expiryDate: card.expiry_date,
+        status: card.status
+      }
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Auto-approval registration error:', err);
+    return res.status(500).json({ error: 'Registration failed due to a server error.' });
+  } finally {
+    client.release();
+  }
+});
+
 // GET /api/identities - List & Search
 router.get('/', authenticate, async (req, res) => {
   try {

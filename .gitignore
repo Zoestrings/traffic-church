@@ -18,6 +18,9 @@ yarn-error.log*
 *.pid
 *.seed
 
+# Vercel CLI cache & config
+.vercel/
+
 # OS metadata
 .DS_Store
 Thumbs.db

@@ -102,11 +102,19 @@ async function api(url, options = {}) {
 
 // --- Session Verification ---
 async function initSession() {
-  // Check if current URL is a public verification link: /verify/<token> or /p/<token>
   const pathParts = window.location.pathname.split('/').filter(Boolean);
+  
+  // 1. Check if current URL is a public verification link: /verify/<token> or /p/<token>
   if ((pathParts[0] === 'verify' || pathParts[0] === 'p') && pathParts[1]) {
     state.currentRoute = 'public-verify';
     state.verifyToken = pathParts[1];
+    render();
+    return;
+  }
+
+  // 2. Check if current URL is public self-registration: /register or #register
+  if (pathParts[0] === 'register' || window.location.hash === '#register' || window.location.hash === '#public-register') {
+    state.currentRoute = 'public-register';
     render();
     return;
   }
@@ -149,13 +157,19 @@ function render() {
     return;
   }
 
-  // 2. Unauthenticated -> Login View
+  // 2. Public Self-Registration View (Auto-Approval with Instant CR80 Card)
+  if (state.currentRoute === 'public-register') {
+    loadPublicRegisterView(root);
+    return;
+  }
+
+  // 3. Unauthenticated -> Login View
   if (!state.user) {
     renderLoginView(root);
     return;
   }
 
-  // 3. Authenticated -> Enterprise Platform Shell
+  // 4. Authenticated -> Enterprise Platform Shell
   renderAppShell(root);
 }
 
@@ -163,13 +177,13 @@ function render() {
 function renderLoginView(container) {
   container.innerHTML = `
     <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #090d16; padding: 20px;">
-      <div style="width: 100%; max-width: 400px; background: #ffffff; border-radius: 8px; border: 1px solid #1e293b; padding: 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.4);">
+      <div style="width: 100%; max-width: 420px; background: #ffffff; border-radius: 12px; border: 1px solid #1e293b; padding: 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.4);">
         <div style="margin-bottom: 24px; text-align: left;">
-          <div style="width: 36px; height: 36px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 700; margin-bottom: 12px;">
-            AI
+          <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; font-size: 16px; margin-bottom: 14px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
+            GCI
           </div>
-          <h1 style="font-size: 18px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em;">Apex Identity Platform</h1>
-          <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Sign in with your authorized staff credentials.</p>
+          <h1 style="font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">Apex Identity Platform</h1>
+          <p style="font-size: 12.5px; color: #64748b; margin-top: 4px;">Sign in with your authorized administrative credentials.</p>
         </div>
 
         <div id="loginAlert" style="display: none; padding: 10px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 16px;"></div>
@@ -185,12 +199,25 @@ function renderLoginView(container) {
             <input type="password" id="loginPassword" class="form-control" value="admin123" required placeholder="••••••••" />
           </div>
 
-          <button type="submit" id="loginBtn" class="btn btn-primary" style="width: 100%; margin-top: 8px; padding: 10px;">
+          <button type="submit" id="loginBtn" class="btn btn-primary" style="width: 100%; margin-top: 8px; padding: 11px; font-weight: 600;">
             Sign In to Identity Workspace
           </button>
         </form>
 
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; text-align: center;">
+        <!-- Public Self-Registration Option -->
+        <div style="margin-top: 20px; padding: 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
+          <div style="font-size: 12px; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>🎖️</span> New Member or Traffic Marshal?
+          </div>
+          <div style="font-size: 11px; color: #64748b; margin: 4px 0 10px;">
+            Register now to receive your official permanent ID &amp; instant digital QR card.
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="navigate('public-register')" style="width: 100%; font-weight: 600;">
+            Self-Register for Digital ID &rarr;
+          </button>
+        </div>
+
+        <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; text-align: center;">
           Default Super Admin: <code style="color: #0f172a;">admin@gracechapel.org</code> &bull; Pass: <code style="color: #0f172a;">admin123</code>
         </div>
       </div>
@@ -265,6 +292,9 @@ function renderAppShell(container) {
           ` : ''}
           <a class="nav-item ${state.currentRoute === 'cards' ? 'active' : ''}" onclick="navigate('cards')">
             <i data-lucide="credit-card"></i> ID Card & Print
+          </a>
+          <a class="nav-item ${state.currentRoute === 'enrollment' ? 'active' : ''}" onclick="navigate('enrollment')">
+            <i data-lucide="qr-code"></i> Public Enrollment
           </a>
           <a class="nav-item ${state.currentRoute === 'history' ? 'active' : ''}" onclick="navigate('history')">
             <i data-lucide="history"></i> Verification Log
@@ -362,6 +392,9 @@ function renderCurrentRoute() {
       break;
     case 'cards':
       loadCardsManagementView(container);
+      break;
+    case 'enrollment':
+      renderEnrollmentQRView(container);
       break;
     case 'history':
       loadHistoryView(container);
@@ -1284,6 +1317,9 @@ async function openIdentityModal(personId) {
 
     footer.innerHTML = `
       <button class="btn btn-secondary btn-sm" onclick="closeIdentityModal()">Close</button>
+      <button class="btn btn-secondary btn-sm" onclick="navigateToPrintCard(${p.id})">
+        <i data-lucide="printer" style="width: 13px; height: 13px;"></i> Print Badge
+      </button>
       ${['super_admin', 'identity_manager'].includes(state.role) ? `
         <button class="btn btn-secondary btn-sm" id="btnToggleEditProfile" onclick="toggleEditProfileView(true)">
           Edit Personnel Profile
@@ -1356,6 +1392,12 @@ function closeIdentityModal() {
   document.getElementById('identityModal').classList.remove('open');
 }
 
+function navigateToPrintCard(personId) {
+  state.selectedPersonForPrint = personId;
+  closeIdentityModal();
+  navigate('cards');
+}
+
 async function revokeCard(cardId, personId) {
   const reason = prompt('Please enter the reason for revoking this card (e.g. Lost, Stolen, Defaced, Replaced):');
   if (!reason) return;
@@ -1392,17 +1434,386 @@ async function reissueCard(personId) {
   }
 }
 
-// --- 6. REGISTER PERSON VIEW ---
+// --- REUSABLE CR80 PHYSICAL & DIGITAL ID CARD GENERATOR ---
+function renderCR80CardHtml(p, currentCard, orgName = 'Grace Chapel International') {
+  const token = currentCard.verification_token || currentCard.verificationToken;
+  const qrUrl = token 
+    ? `/api/cards/token/${token}/qr` 
+    : (currentCard.id ? `/api/cards/${currentCard.id}/qr` : '/api/cards/1/qr');
+
+  const issueDateStr = currentCard.issue_date || currentCard.issueDate;
+  const expiryDateStr = currentCard.expiry_date || currentCard.expiryDate;
+  const statusStr = (currentCard.status || 'ACTIVE').toUpperCase();
+  const photoUrl = p.photo_url || p.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+  const permanentId = p.id_number || p.permanentId || p.idNumber || 'GCI-2026-000';
+  const cardNumber = currentCard.card_number || currentCard.number || `CRD-${permanentId}-01`;
+  const fullName = p.full_name || p.fullName || p.name || 'Registered Member';
+  const rank = p.position || 'Registered Marshal / Member';
+  const dept = p.department || 'Operations Command';
+  const branch = p.branch || 'Main Sanctuary';
+
+  return `
+    <div class="cr80-card-wrapper" id="badgeContainer">
+      <!-- FRONT OF CARD -->
+      <div>
+        <div class="cr80-card-label">Front Layout &bull; CR80 Standard (85.6 &times; 53.98mm)</div>
+        <div class="cr80-card">
+          <div class="cr80-hologram"></div>
+          <div class="cr80-header">
+            <div class="cr80-header-left">
+              <div class="cr80-org-name">${orgName}</div>
+              <div class="cr80-org-sub">Institutional Credential &bull; Official ID</div>
+            </div>
+            <div class="cr80-header-crest">GCI</div>
+          </div>
+          <div class="cr80-body">
+            <img class="cr80-photo" src="${photoUrl}" alt="${fullName}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=090d16&color=d4af37&bold=true'" />
+            <div class="cr80-info">
+              <div class="cr80-name">${p.title ? p.title + ' ' : ''}${fullName}</div>
+              <div class="cr80-rank">${rank}</div>
+              <div class="cr80-dept">${dept} &bull; ${branch}</div>
+              <div class="cr80-id-badge">${permanentId}</div>
+              <div class="cr80-valid-strip">
+                <div class="cr80-valid-item">
+                  <span class="cr80-valid-label">Issued</span>
+                  <span class="cr80-valid-value">${issueDateStr ? String(issueDateStr).split('T')[0] : '2026-01-01'}</span>
+                </div>
+                <div class="cr80-valid-item">
+                  <span class="cr80-valid-label">Expires</span>
+                  <span class="cr80-valid-value">${expiryDateStr ? String(expiryDateStr).split('T')[0] : 'Indefinite'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cr80-footer">
+            <span class="cr80-footer-text">CARD: ${cardNumber}</span>
+            <span class="cr80-status-pill ${statusStr.toLowerCase()}">${statusStr}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACK OF CARD -->
+      <div>
+        <div class="cr80-card-label">Back Layout &bull; Security &amp; Verification</div>
+        <div class="cr80-card">
+          <div class="cr80-magstripe"></div>
+          <div class="cr80-back-header">
+            <span style="font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px;">SECURITY VERIFICATION</span>
+            <span style="font-size: 7.5px; color: #d4af37; font-family: var(--font-data);">SEC-ID-${String(cardNumber).slice(-6)}</span>
+          </div>
+          <div class="cr80-back-body">
+            <div class="cr80-qr-block">
+              <div class="cr80-qr-wrapper">
+                <img class="cr80-qr-image" src="${qrUrl}" alt="Verification QR" />
+              </div>
+              <span class="cr80-qr-label">SCAN TO VERIFY</span>
+            </div>
+            <div class="cr80-back-info">
+              <div class="cr80-back-instruction">
+                Scan with any smartphone camera to verify live credential authenticity against official records.
+              </div>
+              <div class="cr80-security-text">
+                Property of ${orgName}. Found cards must be returned to Security or Admin Office immediately. Tampering is strictly prohibited.
+              </div>
+            </div>
+          </div>
+          <div class="cr80-footer">
+            <span class="cr80-footer-text">STATUS: ${statusStr}</span>
+            <span class="cr80-footer-text">&bull; AUTHORIZED CREDENTIAL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Render Success Screen for Auto-Approved Registration
+function renderRegistrationSuccess(container, result, isPublic = false) {
+  const p = result.identity;
+  const card = result.card;
+  const orgName = (state.org && state.org.name) || 'Grace Chapel International';
+  const cardHtml = renderCR80CardHtml(p, card, orgName);
+
+  // Load into hidden print area for 1-click printing
+  const printArea = document.getElementById('printCardArea');
+  if (printArea) {
+    printArea.innerHTML = cardHtml;
+  }
+
+  container.innerHTML = `
+    <div style="max-width: 860px; margin: 0 auto; padding: 24px 16px;">
+      <div class="card" style="padding: 32px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); text-align: center;">
+        
+        <!-- Animated Success Badge -->
+        <div style="width: 64px; height: 64px; background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #059669; font-size: 32px; font-weight: 800;">
+          &#10003;
+        </div>
+
+        <h2 style="font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+          Registration Complete &bull; Auto-Approved
+        </h2>
+        <p style="font-size: 13.5px; color: #64748b; max-width: 520px; margin: 0 auto 24px;">
+          Welcome, <strong>${p.fullName || p.name}</strong>! Your permanent GCI institutional identity has been generated and your active digital credential is ready.
+        </p>
+
+        <!-- Permanent ID Callout Banner -->
+        <div style="background: linear-gradient(135deg, #090d16 0%, #1e293b 100%); border-radius: 8px; padding: 18px 24px; max-width: 480px; margin: 0 auto 28px; color: #ffffff; border: 1px solid #334155;">
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 4px;">
+            Permanent Institutional ID
+          </div>
+          <div style="font-family: var(--font-data); font-size: 26px; font-weight: 800; color: #d4af37; letter-spacing: 1px;">
+            ${p.permanentId}
+          </div>
+          <div style="font-size: 11.5px; color: #a7f3d0; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span style="display: inline-block; width: 7px; height: 7px; background: #10b981; border-radius: 50%;"></span>
+            Status: ACTIVE &bull; Card No: ${card.number || card.card_number}
+          </div>
+        </div>
+
+        <!-- Render CR80 Badge (Front and Back) -->
+        <div style="margin: 24px 0;">
+          <div style="font-size: 13px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Official CR80 Identity Card Preview
+          </div>
+          ${cardHtml}
+        </div>
+
+        <!-- Primary Action CTAs -->
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px;">
+          <a href="/verify/${card.verificationToken}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 11px 20px; font-weight: 600;">
+            <i data-lucide="external-link" style="width: 16px; height: 16px;"></i> View Live Digital ID
+          </a>
+
+          <button type="button" class="btn btn-accent" onclick="printCard()" style="display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; font-weight: 600;">
+            <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Print Physical Badge (CR80)
+          </button>
+
+          ${isPublic ? `
+            <button type="button" class="btn btn-secondary" onclick="loadPublicRegisterView(document.getElementById('appRoot'))" style="padding: 11px 18px;">
+              Register Another Member
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="navigate('dashboard')" style="padding: 11px 18px;">
+              Admin Login
+            </button>
+          ` : `
+            <button type="button" class="btn btn-secondary" onclick="navigate('directory')" style="padding: 11px 18px;">
+              Back to Directory
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="navigate('register')" style="padding: 11px 18px;">
+              Register Another Person
+            </button>
+          `}
+        </div>
+
+      </div>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+// Public Member Self-Registration Portal (No login required)
+function loadPublicRegisterView(container) {
+  container.innerHTML = `
+    <div style="min-height: 100vh; background: #090d16; padding: 32px 16px;">
+      <div style="max-width: 820px; margin: 0 auto;">
+        
+        <!-- Branded Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #1e293b;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; font-size: 16px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
+              GCI
+            </div>
+            <div>
+              <h1 style="font-size: 18px; font-weight: 800; color: #f8fafc; letter-spacing: -0.01em; margin: 0;">
+                Grace Chapel International &bull; Digital ID Portal
+              </h1>
+              <p style="font-size: 11.5px; color: #94a3b8; margin: 2px 0 0;">
+                Official Institutional Personnel &amp; Traffic Marshal Self-Registration
+              </p>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-secondary btn-sm" onclick="state.currentRoute='login'; render();" style="font-size: 11px;">
+            Staff Sign In &rarr;
+          </button>
+        </div>
+
+        <div class="card" style="padding: 28px; border-radius: 12px; background: #ffffff;">
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
+              Member / Marshal Registration Form
+            </h2>
+            <p style="font-size: 12.5px; color: #64748b;">
+              Fill in your verified details below. Upon submission, your Permanent ID and instant QR verification badge will be generated automatically.
+            </p>
+          </div>
+
+          <div id="publicRegAlert" style="display: none; padding: 12px; border-radius: 6px; font-size: 12.5px; margin-bottom: 18px;"></div>
+
+          <form id="publicRegisterForm">
+            <div class="form-row">
+              <div style="flex: 1;">
+                <label class="form-label">Honorific Title</label>
+                <select id="pubTitle" class="form-control">
+                  <option value="">None</option>
+                  <option value="Pastor">Pastor</option>
+                  <option value="Elder">Elder</option>
+                  <option value="Deacon">Deacon</option>
+                  <option value="Sis">Sis</option>
+                  <option value="Bro" selected>Bro</option>
+                  <option value="Mr">Mr</option>
+                  <option value="Mrs">Mrs</option>
+                  <option value="Dr">Dr</option>
+                </select>
+              </div>
+              <div style="flex: 2;">
+                <label class="form-label">First Name *</label>
+                <input type="text" id="pubFirstName" class="form-control" required placeholder="e.g. David" />
+              </div>
+              <div style="flex: 2;">
+                <label class="form-label">Last Name *</label>
+                <input type="text" id="pubLastName" class="form-control" required placeholder="e.g. Oyedele" />
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-top: 14px;">
+              <div style="flex: 1;">
+                <label class="form-label">Branch / Assembly *</label>
+                <input type="text" id="pubBranch" class="form-control" required value="Main Sanctuary" placeholder="e.g. Main Sanctuary, Lekki Assembly" />
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label">Department / Unit *</label>
+                <input type="text" id="pubDepartment" class="form-control" required value="Traffic Operations Command" placeholder="e.g. Traffic Operations Command, Protocol" />
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label">Designation / Role</label>
+                <input type="text" id="pubPosition" class="form-control" value="Traffic Marshal" placeholder="e.g. Traffic Marshal, Senior Officer, Member" />
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-top: 14px;">
+              <div style="flex: 1;">
+                <label class="form-label">Email Address *</label>
+                <input type="email" id="pubEmail" class="form-control" required placeholder="your.name@example.com" />
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label">Phone Number *</label>
+                <input type="text" id="pubPhone" class="form-control" required placeholder="+234 800 000 0000" />
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-top: 14px;">
+              <div style="flex: 1;">
+                <label class="form-label">Emergency Contact Name</label>
+                <input type="text" id="pubEmergName" class="form-control" placeholder="Next of Kin / Spouse" />
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label">Emergency Contact Phone</label>
+                <input type="text" id="pubEmergPhone" class="form-control" placeholder="+234..." />
+              </div>
+            </div>
+
+            <!-- Profile Photograph Upload -->
+            <div style="margin-top: 18px; padding: 16px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px;">
+              <label class="form-label">Portrait Photograph for ID Card (Clear Face) *</label>
+              <div style="display: flex; gap: 16px; align-items: center; margin-top: 6px;">
+                <img id="pubPhotoPreview" src="" style="width: 72px; height: 86px; border-radius: 4px; object-fit: cover; display: none; border: 2px solid var(--accent-blue);" />
+                <div style="flex: 1;">
+                  <input type="file" id="pubPhotoFile" accept="image/*" class="form-control" required />
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                    Passport style portrait photo (JPG, PNG, WebP &bull; Max 10MB)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
+              <button type="submit" id="pubSubmitBtn" class="btn btn-primary" style="padding: 11px 24px; font-weight: 700; width: 100%;">
+                Submit Registration &amp; Generate Instant ID Card
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  const photoInput = document.getElementById('pubPhotoFile');
+  const previewImg = document.getElementById('pubPhotoPreview');
+  const alertBox = document.getElementById('publicRegAlert');
+
+  photoInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        previewImg.src = ev.target.result;
+        previewImg.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  document.getElementById('publicRegisterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('pubSubmitBtn');
+    btn.disabled = true;
+    btn.innerText = 'Auto-Approving & Generating Credential...';
+    alertBox.style.display = 'none';
+
+    const formData = new FormData();
+    const firstName = document.getElementById('pubFirstName').value.trim();
+    const lastName = document.getElementById('pubLastName').value.trim();
+
+    formData.append('title', document.getElementById('pubTitle').value);
+    formData.append('firstName', firstName);
+    formData.append('lastName', lastName);
+    formData.append('fullName', `${firstName} ${lastName}`);
+    formData.append('branch', document.getElementById('pubBranch').value.trim());
+    formData.append('department', document.getElementById('pubDepartment').value.trim());
+    formData.append('position', document.getElementById('pubPosition').value.trim());
+    formData.append('email', document.getElementById('pubEmail').value.trim());
+    formData.append('phone', document.getElementById('pubPhone').value.trim());
+    formData.append('emergencyContactName', document.getElementById('pubEmergName').value.trim());
+    formData.append('emergencyContactPhone', document.getElementById('pubEmergPhone').value.trim());
+
+    if (photoInput.files && photoInput.files[0]) {
+      formData.append('photo', photoInput.files[0]);
+    }
+
+    try {
+      const res = await fetch('/api/identities/register', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to complete registration.');
+
+      renderRegistrationSuccess(container, data, true);
+    } catch (err) {
+      alertBox.className = 'badge badge-revoked';
+      alertBox.style.display = 'block';
+      alertBox.innerText = 'Error: ' + err.message;
+      btn.disabled = false;
+      btn.innerText = 'Submit Registration & Generate Instant ID Card';
+    }
+  });
+}
+
+// --- 6. REGISTER PERSON VIEW (Staff Console) ---
 function loadRegisterView(container) {
   container.innerHTML = `
     <div class="page-header">
       <div>
         <h1 class="page-title">Register Person & Issue ID Card</h1>
-        <div class="page-description">Create a stable identity record and automatically issue an active physical ID card.</div>
+        <div class="page-description">Auto-approval workflow: creates permanent record and generates instant CR80 digital badge.</div>
       </div>
     </div>
 
     <div class="card" style="max-width: 780px;">
+      <div id="adminRegAlert" style="display: none; padding: 12px; border-radius: 6px; font-size: 12.5px; margin-bottom: 18px;"></div>
+      
       <form id="registerPersonForm">
         <div class="form-row">
           <div style="flex: 1;">
@@ -1413,7 +1824,7 @@ function loadRegisterView(container) {
               <option value="Elder">Elder</option>
               <option value="Deacon">Deacon</option>
               <option value="Sis">Sis</option>
-              <option value="Bro">Bro</option>
+              <option value="Bro" selected>Bro</option>
               <option value="Mr">Mr</option>
               <option value="Mrs">Mrs</option>
               <option value="Dr">Dr</option>
@@ -1436,11 +1847,11 @@ function loadRegisterView(container) {
           </div>
           <div style="flex: 1;">
             <label class="form-label">Department / Unit *</label>
-            <input type="text" id="regDepartment" class="form-control" required placeholder="e.g. Traffic Operations Command, Protocol" />
+            <input type="text" id="regDepartment" class="form-control" required placeholder="e.g. Traffic Operations Command, Protocol" value="Traffic Operations Command" />
           </div>
           <div style="flex: 1;">
             <label class="form-label">Position / Rank</label>
-            <input type="text" id="regPosition" class="form-control" placeholder="e.g. Chief Traffic Marshal, Senior Officer" />
+            <input type="text" id="regPosition" class="form-control" placeholder="e.g. Chief Traffic Marshal, Senior Officer" value="Traffic Marshal" />
           </div>
         </div>
 
@@ -1454,10 +1865,10 @@ function loadRegisterView(container) {
             <input type="text" id="regPhone" class="form-control" placeholder="+234..." />
           </div>
           <div style="flex: 1;">
-            <label class="form-label">Registration Approval Status</label>
+            <label class="form-label">Approval Policy</label>
             <select id="regApproval" class="form-control">
-              <option value="approved">Approved & Verified</option>
-              <option value="pending">Pending Admin Verification</option>
+              <option value="approved" selected>Auto-Approved (Instant Active Card)</option>
+              <option value="pending">Pending Audit Verification</option>
             </select>
           </div>
         </div>
@@ -1477,10 +1888,10 @@ function loadRegisterView(container) {
         <div style="margin-top: 16px; padding: 16px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px;">
           <label class="form-label">Upload Profile Photograph *</label>
           <div style="display: flex; gap: 16px; align-items: center;">
-            <img id="photoPreviewImg" src="" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; display: none; border: 2px solid var(--accent-blue);" />
+            <img id="photoPreviewImg" src="" style="width: 72px; height: 86px; border-radius: 4px; object-fit: cover; display: none; border: 2px solid var(--accent-blue);" />
             <div>
               <input type="file" id="regPhotoFile" accept="image/*" class="form-control" required />
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">High-resolution portrait photo for card printing (JPG, PNG, WebP)</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">High-resolution portrait photo for CR80 card printing (JPG, PNG, WebP)</div>
             </div>
           </div>
         </div>
@@ -1488,7 +1899,7 @@ function loadRegisterView(container) {
         <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
           <button type="button" class="btn btn-secondary" onclick="navigate('directory')">Cancel</button>
           <button type="submit" id="submitRegBtn" class="btn btn-primary">
-            Register Identity & Generate Card
+            Register Identity &amp; Auto-Issue Card
           </button>
         </div>
       </form>
@@ -1497,6 +1908,7 @@ function loadRegisterView(container) {
 
   const photoInput = document.getElementById('regPhotoFile');
   const previewImg = document.getElementById('photoPreviewImg');
+  const alertBox = document.getElementById('adminRegAlert');
 
   photoInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -1515,6 +1927,7 @@ function loadRegisterView(container) {
     const btn = document.getElementById('submitRegBtn');
     btn.disabled = true;
     btn.innerText = 'Creating Identity & Issuing Card...';
+    if (alertBox) alertBox.style.display = 'none';
 
     const formData = new FormData();
     const firstName = document.getElementById('regFirstName').value.trim();
@@ -1527,11 +1940,9 @@ function loadRegisterView(container) {
     formData.append('branch', document.getElementById('regBranch').value.trim());
     formData.append('department', document.getElementById('regDepartment').value.trim());
     formData.append('position', document.getElementById('regPosition').value.trim());
-    formData.append('approvalStatus', document.getElementById('regApproval').value);
     formData.append('email', document.getElementById('regEmail').value.trim());
     formData.append('phone', document.getElementById('regPhone').value.trim());
     formData.append('emergencyContactName', document.getElementById('regEmergName').value.trim());
-    formData.append('emergencyContactPhone', document.getElementById('regEmergPhone').value.trim());
     formData.append('emergencyContactPhone', document.getElementById('regEmergPhone').value.trim());
 
     if (photoInput.files && photoInput.files[0]) {
@@ -1539,19 +1950,24 @@ function loadRegisterView(container) {
     }
 
     try {
-      const res = await fetch('/api/identities', {
+      const res = await fetch('/api/identities/register', {
         method: 'POST',
         body: formData
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to register identity.');
 
-      alert(`Identity registered successfully!\nID Number: ${data.identity.id_number}\nCard Issued: ${data.card.card_number}`);
-      navigate('directory');
+      renderRegistrationSuccess(container, data, false);
     } catch (err) {
-      alert('Error: ' + err.message);
+      if (alertBox) {
+        alertBox.className = 'badge badge-revoked';
+        alertBox.style.display = 'block';
+        alertBox.innerText = 'Error: ' + err.message;
+      } else {
+        alert('Error: ' + err.message);
+      }
       btn.disabled = false;
-      btn.innerText = 'Register Identity & Generate Card';
+      btn.innerText = 'Register Identity & Auto-Issue Card';
     }
   });
 }
@@ -1602,10 +2018,12 @@ async function loadCardsManagementView(container) {
       }
     });
 
-    // Auto-select first person if available
-    if (data.identities.length > 0) {
-      sel.value = data.identities[0].id;
-      renderCardForPerson(data.identities[0].id);
+    // Auto-select targeted person or first person if available
+    const targetPersonId = state.selectedPersonForPrint || (data.identities.length > 0 ? data.identities[0].id : null);
+    if (targetPersonId) {
+      sel.value = targetPersonId;
+      renderCardForPerson(targetPersonId);
+      state.selectedPersonForPrint = null;
     }
   } catch (err) {
     console.error(err);
@@ -1628,80 +2046,7 @@ async function renderCardForPerson(personId) {
       return;
     }
 
-    const cardHtml = `
-      <div class="cr80-card-wrapper" id="badgeContainer">
-        <!-- FRONT OF CARD -->
-        <div>
-          <div class="cr80-card-label">Front Layout &bull; CR80 Standard (85.6 &times; 53.98mm)</div>
-          <div class="cr80-card">
-            <div class="cr80-hologram"></div>
-            <div class="cr80-header">
-              <div class="cr80-header-left">
-                <div class="cr80-org-name">${state.org.name || 'Grace Chapel International'}</div>
-                <div class="cr80-org-sub">Institutional Credential &bull; Official ID</div>
-              </div>
-              <div class="cr80-header-crest">GCI</div>
-            </div>
-            <div class="cr80-body">
-              <img class="cr80-photo" src="${p.photo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}" alt="Badge Photo" onerror="this.src='https://via.placeholder.com/100?text=ID+Photo'" />
-              <div class="cr80-info">
-                <div class="cr80-name">${p.title ? p.title + ' ' : ''}${p.full_name}</div>
-                <div class="cr80-rank">${p.position || 'Registered Member'}</div>
-                <div class="cr80-dept">${p.department || 'General Assembly'} &bull; ${p.branch || 'Main Sanctuary'}</div>
-                <div class="cr80-id-badge">${p.id_number}</div>
-                <div class="cr80-valid-strip">
-                  <div class="cr80-valid-item">
-                    <span class="cr80-valid-label">Issued</span>
-                    <span class="cr80-valid-value">${currentCard.issue_date ? currentCard.issue_date.split('T')[0] : '2026-01-01'}</span>
-                  </div>
-                  <div class="cr80-valid-item">
-                    <span class="cr80-valid-label">Expires</span>
-                    <span class="cr80-valid-value">${currentCard.expiry_date ? currentCard.expiry_date.split('T')[0] : 'Indefinite'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="cr80-footer">
-              <span class="cr80-footer-text">CARD: ${currentCard.card_number}</span>
-              <span class="cr80-status-pill ${currentCard.status}">${currentCard.status.toUpperCase()}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- BACK OF CARD -->
-        <div>
-          <div class="cr80-card-label">Back Layout &bull; Security &amp; Verification</div>
-          <div class="cr80-card">
-            <div class="cr80-magstripe"></div>
-            <div class="cr80-back-header">
-              <span style="font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px;">SECURITY VERIFICATION</span>
-              <span style="font-size: 7.5px; color: #d4af37; font-family: var(--font-data);">SEC-ID-${currentCard.card_number.slice(-6)}</span>
-            </div>
-            <div class="cr80-back-body">
-              <div class="cr80-qr-block">
-                <div class="cr80-qr-wrapper">
-                  <img class="cr80-qr-image" src="/api/cards/${currentCard.id}/qr" alt="Verification QR" />
-                </div>
-                <span class="cr80-qr-label">SCAN TO VERIFY</span>
-              </div>
-              <div class="cr80-back-info">
-                <div class="cr80-back-instruction">
-                  Scan with any smartphone camera to verify live credential authenticity against official records.
-                </div>
-                <div class="cr80-security-text">
-                  Property of ${state.org.name || 'Grace Chapel International'}. Found cards must be returned to Security or Admin Office immediately. Tampering is strictly prohibited.
-                </div>
-              </div>
-            </div>
-            <div class="cr80-footer">
-              <span class="cr80-footer-text">STATUS: ${currentCard.status.toUpperCase()}</span>
-              <span class="cr80-footer-text">&bull; AUTHORIZED CREDENTIAL</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
+    const cardHtml = renderCR80CardHtml(p, currentCard, (state.org && state.org.name) || 'Grace Chapel International');
     container.innerHTML = cardHtml;
 
     // Prepare print area
@@ -1864,6 +2209,180 @@ async function loadSettingsView(container) {
   } catch (err) {
     container.innerHTML = `Error: ${err.message}`;
   }
+}
+
+// --- 9. PUBLIC ENROLLMENT QR PORTAL ---
+async function renderEnrollmentQRView(container) {
+  container.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Public Enrollment & Registration QR</h1>
+        <div class="page-description">
+          Generate, preview, and download the official registration QR code for banners, flyers, projector screens, and member WhatsApp groups.
+        </div>
+      </div>
+      <div>
+        <button class="btn btn-primary btn-sm" onclick="printEnrollmentFlyer()">
+          <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Print Enrollment Flyer
+        </button>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(320px, 460px) 1fr; gap: 24px; align-items: start;">
+      <!-- QR Preview Card -->
+      <div class="card" style="padding: 28px; text-align: center;">
+        <div id="enrollmentQrLoading" style="font-family: var(--font-data); color: var(--text-muted); padding: 40px 0;">
+          <div style="margin: 0 auto 12px; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+          Generating ultra high-resolution registration QR code...
+        </div>
+
+        <div id="enrollmentQrContainer" style="display: none;">
+          <div style="background: #ffffff; padding: 18px; border: 1.5px solid var(--border-color); border-radius: 12px; display: inline-block; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.06);">
+            <img id="registrationQRImg" src="" alt="Public Registration QR" style="width: 250px; height: 250px; display: block; border-radius: 4px;" />
+            <div style="margin-top: 10px; font-size: 11px; font-weight: 800; color: #1e3a8a; letter-spacing: 0.8px; text-transform: uppercase;">
+              SCAN TO SELF-REGISTER
+            </div>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 6px; margin-bottom: 20px; text-align: left;">
+            <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">
+              Direct Enrollment Link
+            </div>
+            <div style="font-family: var(--font-data); font-size: 12px; color: #0f172a; word-break: break-all;" id="registrationLinkDisplay"></div>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a id="downloadRegQRBtn" href="#" download="GCI_Registration_QR.png" class="btn btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i> Download 800px PNG
+            </a>
+            <button type="button" class="btn btn-secondary" onclick="copyEnrollmentLink()" style="display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="copy" style="width: 14px; height: 14px;"></i> Copy Link
+            </button>
+            <a id="openRegFormBtn" href="#" target="_blank" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="external-link" style="width: 14px; height: 14px;"></i> Open Form
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Architectural Decoupling Guide Card -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="card" style="padding: 24px;">
+          <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span style="color: #2563eb;">🛡️</span> Architectural Separation Guarantee
+          </h3>
+          <p style="font-size: 12.5px; color: #475569; line-height: 1.6; margin-bottom: 14px;">
+            To ensure zero interference with ID verification scanners, the system strictly separates <strong>Member Self-Enrollment</strong> from <strong>Credential Inspection</strong>:
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px 16px;">
+              <div style="font-size: 12px; font-weight: 700; color: #166534; margin-bottom: 3px; display: flex; align-items: center; gap: 6px;">
+                <span>📢</span> Public Registration QR (Posters, Projectors & Flyers)
+              </div>
+              <div style="font-size: 11.5px; color: #15803d; line-height: 1.45;">
+                Points strictly to <code style="background: rgba(22,101,52,0.12); padding: 1px 5px; border-radius: 3px; font-weight: 600;">/#register</code>. Invokes the instant auto-approval registration form, creates the permanent ID, and immediately generates their digital credential. Does not query the ID card table.
+              </div>
+            </div>
+
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 16px;">
+              <div style="font-size: 12px; font-weight: 700; color: #1e40af; margin-bottom: 3px; display: flex; align-items: center; gap: 6px;">
+                <span>💳</span> Verification QR (Printed on Card Back)
+              </div>
+              <div style="font-size: 11.5px; color: #1d4ed8; line-height: 1.45;">
+                Points to cryptographic token route <code style="background: rgba(30,64,175,0.12); padding: 1px 5px; border-radius: 3px; font-weight: 600;">/verify/&lt;48-hex-token&gt;</code>. Performs read-only authentication against the database to confirm genuine or revoked credentials.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 20px;">
+          <h4 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+            Deployment Recommendations
+          </h4>
+          <ul style="font-size: 12px; color: #64748b; line-height: 1.6; padding-left: 18px;">
+            <li><strong>Sanctuary Projector:</strong> Project this registration QR on auditorium screens before and after service.</li>
+            <li><strong>Printed Posters:</strong> Place at registration tables, ushers' desks, and sanctuary entrance gates.</li>
+            <li><strong>Marshal Briefing:</strong> Share the direct enrollment link in the departmental WhatsApp broadcast group.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+  lucide.createIcons();
+
+  try {
+    const res = await api('/api/public/registration-qr');
+    if (!res || !res.success) throw new Error(res?.error || 'Failed to generate QR.');
+
+    document.getElementById('enrollmentQrLoading').style.display = 'none';
+    document.getElementById('enrollmentQrContainer').style.display = 'block';
+
+    const qrImg = document.getElementById('registrationQRImg');
+    const dlBtn = document.getElementById('downloadRegQRBtn');
+    const linkDisplay = document.getElementById('registrationLinkDisplay');
+    const testBtn = document.getElementById('openRegFormBtn');
+
+    qrImg.src = res.qrImage;
+    dlBtn.href = res.qrImage;
+    linkDisplay.textContent = res.url;
+    testBtn.href = res.url;
+    window._currentEnrollmentUrl = res.url;
+    window._currentEnrollmentQr = res.qrImage;
+    lucide.createIcons();
+  } catch (err) {
+    const loadEl = document.getElementById('enrollmentQrLoading');
+    if (loadEl) {
+      loadEl.style.color = 'var(--status-revoked-text)';
+      loadEl.textContent = 'Error: ' + err.message;
+    }
+  }
+}
+
+function copyEnrollmentLink() {
+  if (window._currentEnrollmentUrl) {
+    navigator.clipboard.writeText(window._currentEnrollmentUrl);
+    alert('Public Registration link copied to clipboard!\n' + window._currentEnrollmentUrl);
+  }
+}
+
+function printEnrollmentFlyer() {
+  const printArea = document.getElementById('printCardArea');
+  if (!printArea) return;
+
+  const orgName = (state.org && state.org.name) || 'Grace Chapel International';
+  const url = window._currentEnrollmentUrl || `${window.location.origin}/#register`;
+  const qrImage = window._currentEnrollmentQr || '/api/public/registration-qr/image';
+
+  printArea.innerHTML = `
+    <div style="width: 100%; max-width: 680px; margin: 40px auto; padding: 44px; border: 3px solid #090d16; border-radius: 16px; text-align: center; font-family: var(--font-ui); background: #ffffff;">
+      <div style="font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #d4af37; margin-bottom: 8px;">
+        OFFICIAL REGISTRATION PORTAL
+      </div>
+      <h1 style="font-size: 28px; font-weight: 800; color: #090d16; margin-bottom: 8px; font-family: var(--font-display);">
+        ${orgName}
+      </h1>
+      <p style="font-size: 15px; color: #475569; margin-bottom: 28px;">
+        Traffic Marshals &bull; Directorate of Personnel &bull; Official Digital ID Enrollment
+      </p>
+
+      <div style="background: #ffffff; padding: 20px; border: 2px dashed #090d16; border-radius: 12px; display: inline-block; margin-bottom: 24px;">
+        <img src="${qrImage}" alt="Registration QR" style="width: 280px; height: 280px; display: block;" />
+      </div>
+
+      <div style="font-size: 20px; font-weight: 800; color: #1e3a8a; margin-bottom: 8px;">
+        SCAN WITH ANY SMARTPHONE CAMERA
+      </div>
+      <p style="font-size: 13px; color: #64748b; max-width: 480px; margin: 0 auto 20px; line-height: 1.5;">
+        1. Open your phone camera &bull; 2. Point at QR code &bull; 3. Complete quick form &bull; 4. Receive instant permanent ID and printable badge.
+      </p>
+
+      <div style="font-family: var(--font-data); font-size: 13px; color: #090d16; font-weight: 700; background: #f1f5f9; padding: 10px 18px; border-radius: 6px; display: inline-block;">
+        Direct URL: ${url}
+      </div>
+    </div>
+  `;
+
+  window.print();
 }
 
 // --- 10. PUBLIC SCAN VERIFICATION VIEW WITH TERMINAL OVERLAY ---

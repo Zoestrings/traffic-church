@@ -215,4 +215,33 @@ router.get('/:id/qr', async (req, res) => {
   }
 });
 
+// GET /api/cards/token/:token/qr - Direct token-based QR Code generation
+router.get('/token/:token/qr', async (req, res) => {
+  try {
+    const { token } = req.params;
+    if (!token || token.length < 16) {
+      return res.status(400).send('Invalid token format.');
+    }
+
+    const baseUrl = getPublicBaseUrl(req);
+    const verifyUrl = `${baseUrl}/verify/${token}`;
+
+    res.type('png');
+    await qrcode.toFileStream(res, verifyUrl, {
+      width: 340,
+      margin: 3,
+      errorCorrectionLevel: 'H',
+      color: {
+        dark: '#0b132b',
+        light: '#ffffff'
+      }
+    });
+  } catch (err) {
+    console.error('Token QR error:', err);
+    if (!res.headersSent) {
+      res.status(500).send('Error generating QR code.');
+    }
+  }
+});
+
 module.exports = router;

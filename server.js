@@ -39,6 +39,7 @@ app.use('/api/cards', require('./server/routes/cards'));
 app.use('/api/verify', require('./server/routes/verify'));
 app.use('/api/organisation', require('./server/routes/organisation'));
 app.use('/api/audit', require('./server/routes/audit'));
+app.use('/api/public', require('./server/routes/public'));
 
 // Public Verification Page Route -> Serves client app
 app.get('/verify/:token', (req, res) => {
