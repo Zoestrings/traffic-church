@@ -1618,32 +1618,32 @@ function loadPublicRegisterView(container) {
       <div style="max-width: 820px; margin: 0 auto;">
         
         <!-- Branded Header -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #1e293b;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; font-size: 16px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
+        <div class="portal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #1e293b;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div class="header-brand-icon" style="width: 44px; height: 44px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; font-size: 17px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); flex-shrink: 0;">
               GCI
             </div>
             <div>
-              <h1 style="font-size: 18px; font-weight: 800; color: #f8fafc; letter-spacing: -0.01em; margin: 0;">
+              <h1 style="font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.01em; margin: 0;">
                 Grace Chapel International &bull; Digital ID Portal
               </h1>
-              <p style="font-size: 11.5px; color: #94a3b8; margin: 2px 0 0;">
+              <p style="font-size: 12px; color: #94a3b8; margin: 3px 0 0;">
                 Official Institutional Personnel &amp; Traffic Marshal Self-Registration
               </p>
             </div>
           </div>
 
-          <button type="button" class="btn btn-secondary btn-sm" onclick="state.currentRoute='login'; render();" style="font-size: 11px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="state.currentRoute='login'; render();" style="font-size: 11.5px; padding: 8px 14px; white-space: nowrap;">
             Staff Sign In &rarr;
           </button>
         </div>
 
         <div class="card" style="padding: 28px; border-radius: 12px; background: #ffffff;">
           <div style="margin-bottom: 20px;">
-            <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
+            <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">
               Member / Marshal Registration Form
             </h2>
-            <p style="font-size: 12.5px; color: #64748b;">
+            <p style="font-size: 13px; color: #64748b; line-height: 1.5;">
               Fill in your verified details below. Upon submission, your Permanent ID and instant QR verification badge will be generated automatically.
             </p>
           </div>
@@ -1651,84 +1651,96 @@ function loadPublicRegisterView(container) {
           <div id="publicRegAlert" style="display: none; padding: 12px; border-radius: 6px; font-size: 12.5px; margin-bottom: 18px;"></div>
 
           <form id="publicRegisterForm">
-            <div class="form-row">
-              <div style="flex: 1;">
-                <label class="form-label">Honorific Title</label>
-                <select id="pubTitle" class="form-control">
-                  <option value="">None</option>
+            <div class="reg-form-grid">
+              <!-- Name Section -->
+              <div class="reg-input-group title-group">
+                <label>Honorific</label>
+                <select id="pubTitle" name="title">
+                  <option value="Bro" selected>Bro</option>
+                  <option value="Sis">Sis</option>
                   <option value="Pastor">Pastor</option>
                   <option value="Elder">Elder</option>
                   <option value="Deacon">Deacon</option>
-                  <option value="Sis">Sis</option>
-                  <option value="Bro" selected>Bro</option>
                   <option value="Mr">Mr</option>
                   <option value="Mrs">Mrs</option>
                   <option value="Dr">Dr</option>
                 </select>
               </div>
-              <div style="flex: 2;">
-                <label class="form-label">First Name *</label>
-                <input type="text" id="pubFirstName" class="form-control" required placeholder="e.g. David" />
+
+              <div class="reg-input-group">
+                <label>First Name *</label>
+                <input type="text" id="pubFirstName" name="first_name" required placeholder="e.g. David" />
               </div>
-              <div style="flex: 2;">
-                <label class="form-label">Last Name *</label>
-                <input type="text" id="pubLastName" class="form-control" required placeholder="e.g. Oyedele" />
+
+              <div class="reg-input-group">
+                <label>Last Name *</label>
+                <input type="text" id="pubLastName" name="last_name" required placeholder="e.g. Oyedele" />
+              </div>
+
+              <!-- Organization Section -->
+              <div class="reg-input-group">
+                <label>Branch / Assembly *</label>
+                <select id="pubBranch" name="branch" required>
+                  <option value="Main Sanctuary" selected>Main Sanctuary</option>
+                  <option value="Lagos Command">Lagos Command</option>
+                  <option value="Abuja Command">Abuja Command</option>
+                  <option value="Headquarters Command">Headquarters Command</option>
+                </select>
+              </div>
+
+              <div class="reg-input-group">
+                <label>Department / Unit *</label>
+                <select id="pubDepartment" name="department" required>
+                  <option value="Traffic Operations" selected>Traffic Operations</option>
+                  <option value="Traffic Safety">Traffic Safety</option>
+                  <option value="Administration">Administration</option>
+                  <option value="Protocol & Security">Protocol & Security</option>
+                </select>
+              </div>
+
+              <div class="reg-input-group">
+                <label>Designation / Role</label>
+                <input type="text" id="pubPosition" name="position" value="Traffic Marshal" placeholder="e.g. Traffic Marshal" />
+              </div>
+
+              <!-- Contact Section -->
+              <div class="reg-input-group full-width">
+                <label>Email Address *</label>
+                <input type="email" id="pubEmail" name="email" required placeholder="your.name@example.com" />
+              </div>
+
+              <div class="reg-input-group full-width">
+                <label>Phone Number *</label>
+                <input type="tel" id="pubPhone" name="phone" required placeholder="+234 800 000 0000" />
+              </div>
+
+              <div class="reg-input-group">
+                <label>Emergency Contact Name</label>
+                <input type="text" id="pubEmergName" name="emergency_name" placeholder="Next of Kin / Spouse" />
+              </div>
+
+              <div class="reg-input-group">
+                <label>Emergency Phone</label>
+                <input type="tel" id="pubEmergPhone" name="emergency_phone" placeholder="+234..." />
               </div>
             </div>
 
-            <div class="form-row" style="margin-top: 14px;">
-              <div style="flex: 1;">
-                <label class="form-label">Branch / Assembly *</label>
-                <input type="text" id="pubBranch" class="form-control" required value="Main Sanctuary" placeholder="e.g. Main Sanctuary, Lekki Assembly" />
-              </div>
-              <div style="flex: 1;">
-                <label class="form-label">Department / Unit *</label>
-                <input type="text" id="pubDepartment" class="form-control" required value="Traffic Operations Command" placeholder="e.g. Traffic Operations Command, Protocol" />
-              </div>
-              <div style="flex: 1;">
-                <label class="form-label">Designation / Role</label>
-                <input type="text" id="pubPosition" class="form-control" value="Traffic Marshal" placeholder="e.g. Traffic Marshal, Senior Officer, Member" />
-              </div>
-            </div>
-
-            <div class="form-row" style="margin-top: 14px;">
-              <div style="flex: 1;">
-                <label class="form-label">Email Address *</label>
-                <input type="email" id="pubEmail" class="form-control" required placeholder="your.name@example.com" />
-              </div>
-              <div style="flex: 1;">
-                <label class="form-label">Phone Number *</label>
-                <input type="text" id="pubPhone" class="form-control" required placeholder="+234 800 000 0000" />
+            <!-- Profile Photograph Upload Section -->
+            <div class="reg-photo-upload" style="margin-top: 24px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1.5px dashed #cbd5e1; text-align: center;">
+              <label style="display: block; font-weight: 700; font-size: 12px; color: #1e3a8a; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Portrait Photograph for ID Card (Clear Face) *
+              </label>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                <img id="pubPhotoPreview" src="" style="width: 80px; height: 96px; border-radius: 6px; object-fit: cover; display: none; border: 2.5px solid #2563eb; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" />
+                <input type="file" id="pubPhotoFile" name="photo" accept="image/*" capture="user" required style="font-size: 13px; max-width: 320px; width: 100%;" />
+                <p style="font-size: 11.5px; color: #64748b; margin: 0;">
+                  Passport style portrait photo (JPG, PNG, WebP &bull; Max 10MB). Tap to take selfie or choose from photos.
+                </p>
               </div>
             </div>
 
-            <div class="form-row" style="margin-top: 14px;">
-              <div style="flex: 1;">
-                <label class="form-label">Emergency Contact Name</label>
-                <input type="text" id="pubEmergName" class="form-control" placeholder="Next of Kin / Spouse" />
-              </div>
-              <div style="flex: 1;">
-                <label class="form-label">Emergency Contact Phone</label>
-                <input type="text" id="pubEmergPhone" class="form-control" placeholder="+234..." />
-              </div>
-            </div>
-
-            <!-- Profile Photograph Upload -->
-            <div style="margin-top: 18px; padding: 16px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px;">
-              <label class="form-label">Portrait Photograph for ID Card (Clear Face) *</label>
-              <div style="display: flex; gap: 16px; align-items: center; margin-top: 6px;">
-                <img id="pubPhotoPreview" src="" style="width: 72px; height: 86px; border-radius: 4px; object-fit: cover; display: none; border: 2px solid var(--accent-blue);" />
-                <div style="flex: 1;">
-                  <input type="file" id="pubPhotoFile" accept="image/*" class="form-control" required />
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-                    Passport style portrait photo (JPG, PNG, WebP &bull; Max 10MB)
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
-              <button type="submit" id="pubSubmitBtn" class="btn btn-primary" style="padding: 11px 24px; font-weight: 700; width: 100%;">
+            <div style="margin-top: 24px;">
+              <button type="submit" id="pubSubmitBtn" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 700;">
                 Submit Registration &amp; Generate Instant ID Card
               </button>
             </div>
@@ -1815,9 +1827,9 @@ function loadRegisterView(container) {
       <div id="adminRegAlert" style="display: none; padding: 12px; border-radius: 6px; font-size: 12.5px; margin-bottom: 18px;"></div>
       
       <form id="registerPersonForm">
-        <div class="form-row">
-          <div style="flex: 1;">
-            <label class="form-label">Honorific Title</label>
+        <div class="reg-form-grid">
+          <div class="reg-input-group title-group">
+            <label class="form-label">Title</label>
             <select id="regTitle" class="form-control">
               <option value="">None</option>
               <option value="Pastor">Pastor</option>
@@ -1830,55 +1842,49 @@ function loadRegisterView(container) {
               <option value="Dr">Dr</option>
             </select>
           </div>
-          <div style="flex: 2;">
+          <div class="reg-input-group">
             <label class="form-label">First Name *</label>
             <input type="text" id="regFirstName" class="form-control" required placeholder="e.g. David" />
           </div>
-          <div style="flex: 2;">
+          <div class="reg-input-group">
             <label class="form-label">Last Name *</label>
             <input type="text" id="regLastName" class="form-control" required placeholder="e.g. Oyedele" />
           </div>
-        </div>
 
-        <div class="form-row" style="margin-top: 14px;">
-          <div style="flex: 1;">
+          <div class="reg-input-group">
             <label class="form-label">Branch or Location *</label>
             <input type="text" id="regBranch" class="form-control" required placeholder="e.g. Main Sanctuary, Lekki Assembly, Ikeja" value="Main Sanctuary" />
           </div>
-          <div style="flex: 1;">
+          <div class="reg-input-group">
             <label class="form-label">Department / Unit *</label>
             <input type="text" id="regDepartment" class="form-control" required placeholder="e.g. Traffic Operations Command, Protocol" value="Traffic Operations Command" />
           </div>
-          <div style="flex: 1;">
+          <div class="reg-input-group">
             <label class="form-label">Position / Rank</label>
             <input type="text" id="regPosition" class="form-control" placeholder="e.g. Chief Traffic Marshal, Senior Officer" value="Traffic Marshal" />
           </div>
-        </div>
 
-        <div class="form-row" style="margin-top: 14px;">
-          <div style="flex: 1;">
+          <div class="reg-input-group full-width">
             <label class="form-label">Email Address</label>
             <input type="email" id="regEmail" class="form-control" placeholder="person@organisation.org" />
           </div>
-          <div style="flex: 1;">
+          <div class="reg-input-group full-width">
             <label class="form-label">Phone Number</label>
             <input type="text" id="regPhone" class="form-control" placeholder="+234..." />
           </div>
-          <div style="flex: 1;">
+          <div class="reg-input-group">
             <label class="form-label">Approval Policy</label>
             <select id="regApproval" class="form-control">
               <option value="approved" selected>Auto-Approved (Instant Active Card)</option>
               <option value="pending">Pending Audit Verification</option>
             </select>
           </div>
-        </div>
 
-        <div class="form-row" style="margin-top: 14px;">
-          <div style="flex: 1;">
+          <div class="reg-input-group">
             <label class="form-label">Emergency Contact Name</label>
             <input type="text" id="regEmergName" class="form-control" placeholder="Next of Kin / Contact" />
           </div>
-          <div style="flex: 1;">
+          <div class="reg-input-group">
             <label class="form-label">Emergency Contact Phone</label>
             <input type="text" id="regEmergPhone" class="form-control" placeholder="+234..." />
           </div>
