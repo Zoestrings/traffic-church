@@ -6,10 +6,20 @@
   --bg-main: #f8fafc;
   --card-bg: #ffffff;
   --border-color: #e2e8f0;
+  --border-light: #e2e8f0;
   --text-dark: #0f172a;
+  --text-main: #0f172a;
   --text-muted: #64748b;
   --success: #16a34a;
   --danger: #dc2626;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  /* Status badge colours */
+  --alert-green-bg: #d1fae5;
+  --alert-green-text: #065f46;
+  --alert-red-bg: #fee2e2;
+  --alert-red-text: #991b1b;
+  --alert-amber-bg: #fef3c7;
+  --alert-amber-text: #92400e;
 }
 
 * {
@@ -228,3 +238,54 @@ table.data-table td {
   cursor: pointer;
   color: var(--text-muted);
 }
+
+/* Live Verification Activity Feed */
+.activity-feed {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.activity-item {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activity-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.activity-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.status-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.status-badge.verified { background: var(--alert-green-bg); color: var(--alert-green-text); }
+.status-badge.revoked { background: var(--alert-red-bg); color: var(--alert-red-text); }
+.status-badge.suspended { background: var(--alert-amber-bg); color: var(--alert-amber-text); }
+.status-badge.expired { background: #e5e7eb; color: #374151; }

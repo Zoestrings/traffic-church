@@ -106,26 +106,29 @@
 
     /* Print Styles for Physical Badges */
     @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printCardArea, #printCardArea * {
-        visibility: visible;
-      }
+      body * { visibility: hidden; }
+      #printCardArea, #printCardArea * { visibility: visible; }
       #printCardArea {
         position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
+        left: 0; top: 0;
         display: flex !important;
-        flex-direction: column;
-        gap: 20px;
-        align-items: center;
+        flex-direction: row;
+        gap: 8mm;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 10mm;
         background: #ffffff;
       }
-      .no-print {
-        display: none !important;
+      /* Force exact CR80 dimensions at print time */
+      .cr80-card {
+        width: 85.6mm !important;
+        height: 53.98mm !important;
+        box-shadow: none !important;
+        border: 0.25mm solid #cbd5e1 !important;
+        page-break-inside: avoid;
       }
+      .cr80-card-label { display: none !important; }
+      .no-print { display: none !important; }
     }
 
     /* App Shell */
@@ -838,125 +841,258 @@
       gap: 12px;
     }
 
-    /* Card Simulator (CR80) */
+    /* =====================================================
+       CR80 PHYSICAL ID CARD — ISO 7810 ID-1 EXACT DIMENSIONS
+       Screen: 340px × 214px (1px ≈ 1pt at 96dpi)
+       Print:  85.6mm × 53.98mm (enforced in @media print)
+       ===================================================== */
     .cr80-card-wrapper {
       display: flex;
-      gap: 24px;
+      gap: 28px;
       flex-wrap: wrap;
       justify-content: center;
-      margin: 16px 0;
+      margin: 20px 0;
     }
 
+    .cr80-card-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-align: center;
+      font-family: var(--font-display);
+    }
+
+    /* Base card — screen dimensions matching CR80 aspect ratio */
     .cr80-card {
-      width: 338px;
-      height: 213px;
-      background: #ffffff;
-      border-radius: 6px;
-      border: 1px solid #94a3b8;
+      width: 340px;
+      height: 214px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
       position: relative;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font-ui);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+      background: #ffffff;
     }
 
+    /* ── FRONT CARD ── */
     .cr80-header {
-      background: #090d16;
+      background: linear-gradient(90deg, #090d16 0%, #0f172a 60%, #1e3a8a 100%);
       color: #ffffff;
-      padding: 9px 12px;
+      padding: 7px 11px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 2px solid #d4af37;
+      border-bottom: 2.5px solid #d4af37; /* gold line */
+      flex-shrink: 0;
+    }
+
+    .cr80-header-left {
+      display: flex;
+      flex-direction: column;
     }
 
     .cr80-org-name {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .cr80-org-sub {
+      font-size: 7.5px;
+      color: #d4af37;
+      font-weight: 600;
       letter-spacing: 0.5px;
       text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .cr80-header-crest {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #d4af37 0%, #b8922a 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #090d16;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.3);
     }
 
     .cr80-body {
-      padding: 10px 12px;
+      padding: 9px 11px;
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex: 1;
+      min-height: 0;
     }
 
     .cr80-photo {
-      width: 76px;
-      height: 92px;
-      border-radius: 2px;
+      width: 72px;
+      height: 86px;
+      border-radius: 3px;
       object-fit: cover;
-      border: 1px solid #94a3b8;
+      border: 1.5px solid #cbd5e1;
       background: #f1f5f9;
       flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
     }
 
     .cr80-info {
       flex: 1;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
+      padding-top: 2px;
+      min-width: 0;
     }
 
     .cr80-name {
-      font-size: 13.5px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 800;
       color: #0f172a;
       line-height: 1.2;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .cr80-rank {
-      font-size: 11px;
+      font-size: 9.5px;
       font-weight: 700;
       color: #1e3a8a;
       margin-top: 2px;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.5px;
     }
 
     .cr80-dept {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-muted);
-      margin-top: 2px;
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .cr80-id-badge {
       font-family: var(--font-data);
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
-      background: #f1f5f9;
-      padding: 2px 6px;
+      background: #090d16;
+      color: #d4af37;
+      padding: 2px 7px;
       border-radius: 2px;
-      border: 1px solid #cbd5e1;
       display: inline-block;
       margin-top: 5px;
       width: fit-content;
+      letter-spacing: 0.8px;
+    }
+
+    .cr80-valid-strip {
+      display: flex;
+      gap: 12px;
+      margin-top: 5px;
+    }
+
+    .cr80-valid-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cr80-valid-label {
+      font-size: 7px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .cr80-valid-value {
+      font-size: 9px;
       color: #0f172a;
+      font-weight: 700;
+      font-family: var(--font-data);
     }
 
     .cr80-footer {
-      background: #f8fafc;
-      border-top: 1px solid #e2e8f0;
-      padding: 5px 12px;
+      background: linear-gradient(90deg, #090d16 0%, #1e293b 100%);
+      border-top: 1.5px solid #d4af37;
+      padding: 4px 11px;
       display: flex;
       justify-content: space-between;
-      font-size: 9px;
-      color: var(--text-muted);
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .cr80-footer-text {
+      font-size: 7.5px;
+      color: #94a3b8;
       font-family: var(--font-data);
       font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .cr80-status-pill {
+      font-size: 7.5px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cr80-status-pill.active { background: #10b981; color: #ffffff; }
+    .cr80-status-pill.revoked { background: #e11d48; color: #ffffff; }
+    .cr80-status-pill.suspended { background: #f59e0b; color: #000000; }
+
+    /* ── BACK CARD ── */
+    .cr80-back-header {
+      background: linear-gradient(90deg, #090d16 0%, #1e293b 100%);
+      color: #ffffff;
+      padding: 6px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #d4af37;
+      flex-shrink: 0;
+    }
+
+    /* Magnetic stripe simulation */
+    .cr80-magstripe {
+      height: 30px;
+      background: linear-gradient(90deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+      margin: 0;
+      flex-shrink: 0;
     }
 
     .cr80-back-body {
-      padding: 12px;
+      padding: 8px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .cr80-qr-block {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      flex: 1;
-      text-align: center;
+      gap: 3px;
     }
 
     .cr80-qr-wrapper {
@@ -964,20 +1100,62 @@
       padding: 4px;
       border: 1px solid #cbd5e1;
       border-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
     .cr80-qr-image {
-      width: 86px;
-      height: 86px;
+      width: 80px;
+      height: 80px;
       display: block;
     }
 
+    .cr80-qr-label {
+      font-size: 7px;
+      color: #64748b;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .cr80-back-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
     .cr80-back-instruction {
-      font-size: 9px;
-      color: var(--text-muted);
-      margin-top: 6px;
-      line-height: 1.3;
-      max-width: 250px;
+      font-size: 8.5px;
+      color: #334155;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .cr80-security-text {
+      font-size: 6.5px;
+      color: #94a3b8;
+      line-height: 1.4;
+      font-family: var(--font-data);
+      border-top: 1px solid #e2e8f0;
+      padding-top: 4px;
+      margin-top: auto;
+    }
+
+    /* Hologram shimmer strip on front card */
+    .cr80-hologram {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 6px;
+      height: 100%;
+      background: linear-gradient(180deg,
+        rgba(212,175,55,0.6) 0%,
+        rgba(255,255,255,0.8) 20%,
+        rgba(59,130,246,0.5) 40%,
+        rgba(255,255,255,0.9) 60%,
+        rgba(212,175,55,0.5) 80%,
+        rgba(255,255,255,0.7) 100%);
+      z-index: 5;
     }
 
     /* Scanner Viewport */

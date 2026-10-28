@@ -591,43 +591,16 @@ async function loadDashboardView(container) {
               Audit Log &rarr;
             </a>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            ${data.recentVerifications.length > 0 ? data.recentVerifications.map(v => {
-              const isVerified = v.outcome === 'verified';
-              const isRevoked = v.outcome === 'revoked';
-              return `
-                <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 10px 12px; border-radius: var(--radius-md); background: ${isVerified ? '#f8fafc' : (isRevoked ? '#fff1f2' : '#f8fafc')}; border: 1px solid ${isVerified ? '#f1f5f9' : (isRevoked ? '#fecdd3' : '#e2e8f0')}; transition: all 0.15s ease;">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 32px; height: 32px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: ${isVerified ? '#ecfdf5' : (isRevoked ? '#fee2e2' : '#f1f5f9')}; color: ${isVerified ? '#059669' : (isRevoked ? '#e11d48' : '#64748b')}; flex-shrink: 0;">
-                      <i data-lucide="${isVerified ? 'shield-check' : (isRevoked ? 'shield-alert' : 'help-circle')}" style="width: 18px; height: 18px;"></i>
-                    </div>
-                    <div>
-                      <div style="font-size: 13px; font-weight: 700; color: #0f172a; font-family: var(--font-display);">
-                        ${v.person_name || 'Unrecognized Credential'}
-                      </div>
-                      <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
-                        ${v.id_number ? `<span style="font-family: var(--font-data); font-weight: 600; color: #475569;">${v.id_number}</span> &bull; ` : ''}
-                        <span>${formatRelativeTime(v.created_at)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <span class="status-chip ${isVerified ? 'active' : (isRevoked ? 'revoked' : 'neutral')}" style="font-size: 11px; padding: 2px 8px;">
-                    <span class="chip-dot"></span>
-                    ${v.outcome.toUpperCase()}
-                  </span>
-                </div>
-              `;
-            }).join('') : `
-              <div style="text-align: center; color: var(--text-muted); padding: 36px; font-size: 12px; font-family: var(--font-display);">
-                <i data-lucide="scan" style="width: 24px; height: 24px; margin-bottom: 8px; opacity: 0.5;"></i>
-                <div>No scans recorded in system yet.</div>
-              </div>
-            `}
-          </div>
+          <ul class="activity-feed" id="liveScanFeed">
+            <li class="activity-item">
+              <span class="activity-meta" style="color: var(--text-muted);">Loading scan stream...</span>
+            </li>
+          </ul>
         </div>
       </div>
     `;
     lucide.createIcons();
+    loadLiveVerificationActivity();
   } catch (err) {
     container.innerHTML = `
       <div class="card" style="border-left: 4px solid #e11d48; padding: 20px;">
@@ -639,6 +612,58 @@ async function loadDashboardView(container) {
   }
 }
 
+// --- LIVE VERIFICATION ACTIVITY FEED ---
+function _getScanStatusClass(outcome) {
+  if (!outcome) return 'expired';
+  const s = outcome.toUpperCase();
+  if (s === 'VERIFIED') return 'verified';
+  if (s === 'REVOKED' || s === 'INVALID') return 'revoked';
+  if (s === 'SUSPENDED') return 'suspended';
+  return 'expired';
+}
+
+function _esc(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
+}
+
+async function loadLiveVerificationActivity() {
+  const feed = document.getElementById('liveScanFeed');
+  if (!feed) return;
+  try {
+    // Reuse already-fetched stats if available, otherwise fetch history
+    let events = [];
+    if (state.stats && state.stats.recentVerifications && state.stats.recentVerifications.length) {
+      events = state.stats.recentVerifications;
+    } else {
+      const res = await api('/api/history?limit=5');
+      events = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+    }
+    if (!events.length) {
+      feed.innerHTML = `<li class="activity-item"><span class="activity-meta">No scans recorded in system yet.</span></li>`;
+      return;
+    }
+    feed.innerHTML = events.slice(0, 5).map(v => {
+      const name = v.person_name || v.full_name || 'Unrecognized Credential';
+      const idNum = v.id_number || '';
+      const outcome = v.outcome || v.status || 'UNKNOWN';
+      const ts = v.created_at || v.timestamp;
+      const timeStr = ts ? formatRelativeTime(ts) : '--';
+      const cls = _getScanStatusClass(outcome);
+      return `
+        <li class="activity-item">
+          <div class="activity-details">
+            <span class="activity-name">${_esc(name)}</span>
+            <span class="activity-meta">${idNum ? _esc(idNum) + ' &bull; ' : ''}${timeStr}</span>
+          </div>
+          <span class="status-badge ${cls}">${_esc(outcome)}</span>
+        </li>`;
+    }).join('');
+  } catch (err) {
+    if (feed) feed.innerHTML = `<li class="activity-item"><span class="activity-meta" style="color:#e11d48;">Failed to load live activity.</span></li>`;
+  }
+}
+
 // --- 4. SCAN & VERIFY VIEW (MOBILE FIRST) ---
 function loadScannerView(container) {
   container.innerHTML = `
@@ -647,12 +672,14 @@ function loadScannerView(container) {
         <h1 class="page-title">Scan & Verify Credential</h1>
         <div class="page-description">Real-time mobile camera scanner for physical ID badges and QR codes.</div>
       </div>
+      <span id="cam-status" style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.6px; padding: 3px 10px; border-radius: 3px; background: #1e293b; color: #94a3b8; text-transform: uppercase; flex-shrink: 0;">STANDBY</span>
     </div>
 
     <div class="scanner-container">
       <div class="card" style="padding: 24px;">
         <div id="cameraInstructions" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          Position the QR code inside the camera viewfinder to verify identity against live records.
+          Point your rear camera at the QR code on the ID badge.
+          On <strong>iPhone / Safari</strong>, use the <strong>Photo Scan</strong> button below if live camera doesn't start.
         </div>
 
         <div id="qrReader" style="margin: 0 auto; min-height: 280px; display: flex; align-items: center; justify-content: center; background: #000000; color: #ffffff;">
@@ -661,11 +688,20 @@ function loadScannerView(container) {
           </button>
         </div>
 
-        <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: center;">
+        <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center;">
           <button class="btn btn-secondary btn-sm" id="stopScanBtn" style="display: none;">
             <i data-lucide="camera-off"></i> Stop Camera
           </button>
+
+          <!-- iOS / Safari fallback: file input opens native camera, scanFile() decodes the photo -->
+          <label id="photoScanLabel" class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Take a photo of the QR code (best for iPhone / Safari)">
+            <i data-lucide="image"></i> Photo Scan (iOS)
+            <input type="file" id="qrPhotoInput" accept="image/*" capture="environment" style="display: none;" />
+          </label>
         </div>
+
+        <!-- Live status message -->
+        <p id="scanner-msg" style="margin-top: 14px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); text-align: center; min-height: 18px;">Ready. Grant camera permission then tap Open Camera Scanner.</p>
 
         <!-- Manual Lookup Fallback -->
         <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-subtle); text-align: left;">
@@ -687,76 +723,177 @@ function loadScannerView(container) {
   const stopBtn = document.getElementById('stopScanBtn');
   const manualBtn = document.getElementById('manualVerifyBtn');
 
-  startBtn.addEventListener('click', () => {
-    startCameraScanner();
-  });
-
-  stopBtn.addEventListener('click', () => {
-    stopCameraScanner();
-  });
+  startBtn.addEventListener('click', () => startCameraScanner());
+  stopBtn.addEventListener('click',  () => stopCameraScanner());
 
   manualBtn.addEventListener('click', () => {
     const val = document.getElementById('manualTokenInput').value.trim();
     if (val) {
-      // If full URL was pasted, extract token
-      const token = val.includes('/verify/') ? val.split('/verify/')[1].split('/')[0] : (val.includes('/p/') ? val.split('/p/')[1].split('/')[0] : val);
+      const token = val.includes('/verify/') ? val.split('/verify/')[1].split('/')[0]
+                  : val.includes('/p/')      ? val.split('/p/')[1].split('/')[0]
+                  : val;
       verifyToken(token);
     }
   });
+
+  // ─── iOS / Safari Photo Scan fallback ───
+  const photoInput = document.getElementById('qrPhotoInput');
+  photoInput.addEventListener('change', async (e) => {
+    if (!e.target.files || !e.target.files.length) return;
+    const file = e.target.files[0];
+    const resultArea = document.getElementById('verificationResultArea');
+    if (resultArea) {
+      resultArea.innerHTML = `<div class="card" style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">Scanning photo for QR code...</div>`;
+    }
+    setScannerStatus('DECODING', 'Decoding image — please wait...');
+    try {
+      const tempReader = new Html5Qrcode('qrReader');
+      const decodedText = await tempReader.scanFile(file, false);
+      const token = decodedText.includes('/verify/') ? decodedText.split('/verify/')[1].split('?')[0].split('#')[0]
+                  : decodedText.includes('/p/')      ? decodedText.split('/p/')[1].split('?')[0].split('#')[0]
+                  : decodedText;
+      setScannerStatus('LIVE', 'QR code decoded — verifying credential...');
+      verifyToken(token);
+    } catch (err) {
+      setScannerStatus('FAILED', 'No QR code found. Ensure the image is clear and try again.');
+      const ra = document.getElementById('verificationResultArea');
+      if (ra) {
+        ra.innerHTML = `
+          <div class="card" style="padding: 20px; border-left: 4px solid #e11d48;">
+            <div style="font-weight: 700; color: #e11d48; font-size: 13px; margin-bottom: 4px;">No QR Code Detected in Photo</div>
+            <div style="color: var(--text-muted); font-size: 12px;">Make sure the QR code is clearly visible and well-lit. Try again or paste the token manually.</div>
+          </div>`;
+      }
+    }
+    photoInput.value = '';
+  });
 }
 
-function startCameraScanner() {
+// ─── Scanner status helper ───
+function setScannerStatus(status, msg) {
+  const badge = document.getElementById('cam-status');
+  const msgEl = document.getElementById('scanner-msg');
+  const styles = {
+    STANDBY:      { bg: '#1e293b', color: '#94a3b8' },
+    INITIALIZING: { bg: '#1e3a8a', color: '#93c5fd' },
+    LIVE:         { bg: '#065f46', color: '#6ee7b7' },
+    DECODING:     { bg: '#713f12', color: '#fde68a' },
+    STOPPED:      { bg: '#1e293b', color: '#94a3b8' },
+    FAILED:       { bg: '#7f1d1d', color: '#fca5a5' },
+  };
+  if (badge) {
+    const s = styles[status] || styles.STANDBY;
+    badge.textContent = status;
+    badge.style.background = s.bg;
+    badge.style.color = s.color;
+  }
+  if (msgEl && msg) msgEl.textContent = msg;
+}
+
+async function startCameraScanner() {
   const readerDiv = document.getElementById('qrReader');
-  const startBtn = document.getElementById('startScanBtn');
-  const stopBtn = document.getElementById('stopScanBtn');
+  const startBtn  = document.getElementById('startScanBtn');
+  const stopBtn   = document.getElementById('stopScanBtn');
+
+  setScannerStatus('INITIALIZING', 'Requesting camera access...');
+
+  // Ensure any previous stream is fully dead before starting (fixes Safari NotReadableError)
+  await stopCameraScanner(true /* silent */);
 
   if (startBtn) startBtn.style.display = 'none';
-  if (stopBtn) stopBtn.style.display = 'inline-flex';
+  if (stopBtn)  stopBtn.style.display  = 'inline-flex';
 
-  state.html5QrCode = new Html5Qrcode("qrReader");
-  const config = { fps: 10, qrbox: { width: 220, height: 220 } };
-
-  state.html5QrCode.start(
-    { facingMode: "environment" },
-    config,
-    (decodedText) => {
-      // Detected QR
-      console.log('Scanned text:', decodedText);
-      // Stop scanner upon successful read
-      stopCameraScanner();
-      // Extract token from URL
-      let token = decodedText;
-      if (decodedText.includes('/verify/')) {
-        token = decodedText.split('/verify/')[1].split('?')[0].split('#')[0];
-      } else if (decodedText.includes('/p/')) {
-        token = decodedText.split('/p/')[1].split('?')[0].split('#')[0];
-      }
-      verifyToken(token);
-    },
-    (errorMessage) => {
-      // Scanning frame error, keep scanning
+  const config = {
+    fps: 10,
+    qrbox: { width: 220, height: 220 },
+    // iOS Safari needs videoConstraints to be minimal — no exact constraints
+    videoConstraints: {
+      facingMode: { ideal: 'environment' }
     }
-  ).catch(err => {
-    readerDiv.innerHTML = `
-      <div style="padding: 20px; color: #fee2e2; text-align: center;">
-        <div style="font-weight: 600; margin-bottom: 6px;">Camera Access Unavailable</div>
-        <div style="font-size: 12px;">${err.message || 'Permission denied or no camera device found.'}</div>
-        <div style="margin-top: 12px;">Please use the manual token fallback below.</div>
-      </div>
-    `;
+  };
+
+  const onSuccess = (decodedText) => {
+    stopCameraScanner();
+    let token = decodedText;
+    if (decodedText.includes('/verify/')) {
+      token = decodedText.split('/verify/')[1].split('?')[0].split('#')[0];
+    } else if (decodedText.includes('/p/')) {
+      token = decodedText.split('/p/')[1].split('?')[0].split('#')[0];
+    }
+    verifyToken(token);
+  };
+
+  const onError = () => { /* frame-level errors are normal — keep scanning */ };
+
+  // ─── Strategy 1: getCameras() + explicit deviceId (most reliable on iOS Safari) ───
+  try {
+    const devices = await Html5Qrcode.getCameras();
+    if (devices && devices.length) {
+      // Pick rear camera: prefer label containing 'back'/'rear', else last device (iOS convention)
+      let cameraId = devices[devices.length - 1].id; // iOS puts rear last
+      for (const d of devices) {
+        const label = (d.label || '').toLowerCase();
+        if (label.includes('back') || label.includes('rear') || label.includes('environment')) {
+          cameraId = d.id;
+          break;
+        }
+      }
+      state.html5QrCode = new Html5Qrcode('qrReader');
+      await state.html5QrCode.start(cameraId, config, onSuccess, onError);
+      setScannerStatus('LIVE', 'Camera active — align the QR code inside the viewfinder.');
+      return; // success — done
+    }
+  } catch (e1) {
+    console.warn('getCameras strategy failed, trying facingMode fallback:', e1);
+  }
+
+  // ─── Strategy 2: facingMode ideal (non-exact — Safari tolerates this) ───
+  try {
+    state.html5QrCode = new Html5Qrcode('qrReader');
+    await state.html5QrCode.start({ facingMode: { ideal: 'environment' } }, config, onSuccess, onError);
+    setScannerStatus('LIVE', 'Camera active — align the QR code inside the viewfinder.');
+    return;
+  } catch (e2) {
+    console.warn('facingMode ideal failed, trying user-facing camera:', e2);
+  }
+
+  // ─── Strategy 3: Front camera last resort ───
+  try {
+    state.html5QrCode = new Html5Qrcode('qrReader');
+    await state.html5QrCode.start({ facingMode: 'user' }, config, onSuccess, onError);
+    setScannerStatus('LIVE', 'Front camera active — rear unavailable on this device.');
+    return;
+  } catch (e3) {
+    setScannerStatus('FAILED', e3.message || 'Camera denied. Use Photo Scan or paste token below.');
+    console.error('All camera strategies failed:', e3);
+    if (readerDiv) {
+      readerDiv.innerHTML = `
+        <div style="padding: 24px; color: #fee2e2; text-align: center;">
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Camera Access Unavailable</div>
+          <div style="font-size: 12px; opacity: 0.85; margin-bottom: 12px;">${e3.message || 'Permission denied or no camera device found.'}</div>
+          <div style="font-size: 12px; color: #fcd34d;">👆 Use the <strong>Photo Scan (iOS)</strong> button above, or paste your token below.</div>
+        </div>`;
+    }
     if (stopBtn) stopBtn.style.display = 'none';
-  });
+    if (startBtn) startBtn.style.display = 'inline-flex';
+  }
 }
 
-function stopCameraScanner() {
-  if (state.html5QrCode && state.html5QrCode.isScanning) {
-    state.html5QrCode.stop().then(() => {
-      state.html5QrCode.clear();
-      const startBtn = document.getElementById('startScanBtn');
-      const stopBtn = document.getElementById('stopScanBtn');
-      if (startBtn) startBtn.style.display = 'inline-flex';
-      if (stopBtn) stopBtn.style.display = 'none';
-    }).catch(() => {});
+async function stopCameraScanner() {
+  if (!state.html5QrCode) return;
+  try {
+    if (state.html5QrCode.isScanning) {
+      await state.html5QrCode.stop();
+    }
+    state.html5QrCode.clear();
+  } catch (e) {
+    // Silently ignore — scanner may already be stopped
+  } finally {
+    state.html5QrCode = null;
+    const startBtn = document.getElementById('startScanBtn');
+    const stopBtn  = document.getElementById('stopScanBtn');
+    if (startBtn) startBtn.style.display = 'inline-flex';
+    if (stopBtn)  stopBtn.style.display  = 'none';
   }
 }
 
@@ -1479,7 +1616,7 @@ async function renderCardForPerson(personId) {
   const container = document.getElementById('cardPreviewContainer');
   if (!container) return;
 
-  container.innerHTML = 'Rendering CR80 high-contrast badge preview...';
+  container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 13px;">Rendering high-security CR80 credential preview...</div>';
 
   try {
     const data = await api(`/api/identities/${personId}`);
@@ -1487,7 +1624,7 @@ async function renderCardForPerson(personId) {
     const currentCard = data.cards.find(c => c.is_current) || data.cards[0];
 
     if (!currentCard) {
-      container.innerHTML = `<div class="card" style="padding: 20px; color: var(--status-revoked);">No card has been issued for this person yet.</div>`;
+      container.innerHTML = `<div class="card" style="padding: 20px; color: var(--status-revoked); text-align: center;">No active credential card issued for this person.</div>`;
       return;
     }
 
@@ -1495,47 +1632,70 @@ async function renderCardForPerson(personId) {
       <div class="cr80-card-wrapper" id="badgeContainer">
         <!-- FRONT OF CARD -->
         <div>
-          <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; text-align: center;">Front Layout (CR80 Standard)</div>
+          <div class="cr80-card-label">Front Layout &bull; CR80 Standard (85.6 &times; 53.98mm)</div>
           <div class="cr80-card">
+            <div class="cr80-hologram"></div>
             <div class="cr80-header">
-              <div class="cr80-org-name">${state.org.name || 'Grace Chapel International'}</div>
-              <div style="font-size: 9px; opacity: 0.8; font-weight: 600;">OFFICIAL ID</div>
+              <div class="cr80-header-left">
+                <div class="cr80-org-name">${state.org.name || 'Grace Chapel International'}</div>
+                <div class="cr80-org-sub">Institutional Credential &bull; Official ID</div>
+              </div>
+              <div class="cr80-header-crest">GCI</div>
             </div>
             <div class="cr80-body">
-              <img class="cr80-photo" src="${p.photo_url || 'https://via.placeholder.com/100'}" alt="Badge Photo" />
+              <img class="cr80-photo" src="${p.photo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}" alt="Badge Photo" onerror="this.src='https://via.placeholder.com/100?text=ID+Photo'" />
               <div class="cr80-info">
                 <div class="cr80-name">${p.title ? p.title + ' ' : ''}${p.full_name}</div>
                 <div class="cr80-rank">${p.position || 'Registered Member'}</div>
                 <div class="cr80-dept">${p.department || 'General Assembly'} &bull; ${p.branch || 'Main Sanctuary'}</div>
                 <div class="cr80-id-badge">${p.id_number}</div>
+                <div class="cr80-valid-strip">
+                  <div class="cr80-valid-item">
+                    <span class="cr80-valid-label">Issued</span>
+                    <span class="cr80-valid-value">${currentCard.issue_date ? currentCard.issue_date.split('T')[0] : '2026-01-01'}</span>
+                  </div>
+                  <div class="cr80-valid-item">
+                    <span class="cr80-valid-label">Expires</span>
+                    <span class="cr80-valid-value">${currentCard.expiry_date ? currentCard.expiry_date.split('T')[0] : 'Indefinite'}</span>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="cr80-footer">
-              <span>Card: ${currentCard.card_number}</span>
-              <span>Expires: ${currentCard.expiry_date ? currentCard.expiry_date.split('T')[0] : 'Indefinite'}</span>
+              <span class="cr80-footer-text">CARD: ${currentCard.card_number}</span>
+              <span class="cr80-status-pill ${currentCard.status}">${currentCard.status.toUpperCase()}</span>
             </div>
           </div>
         </div>
 
         <!-- BACK OF CARD -->
         <div>
-          <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; text-align: center;">Back Layout (QR & Recovery)</div>
+          <div class="cr80-card-label">Back Layout &bull; Security &amp; Verification</div>
           <div class="cr80-card">
-            <div class="cr80-header" style="background: #1e293b;">
-              <div class="cr80-org-name" style="font-size: 9px;">VERIFICATION & RETURN</div>
-              <div style="font-size: 8px;">SCAN WITH PHONE</div>
+            <div class="cr80-magstripe"></div>
+            <div class="cr80-back-header">
+              <span style="font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px;">SECURITY VERIFICATION</span>
+              <span style="font-size: 7.5px; color: #d4af37; font-family: var(--font-data);">SEC-ID-${currentCard.card_number.slice(-6)}</span>
             </div>
             <div class="cr80-back-body">
-              <div class="cr80-qr-wrapper">
-                <img class="cr80-qr-image" src="/api/cards/${currentCard.id}/qr" alt="Verification QR" />
+              <div class="cr80-qr-block">
+                <div class="cr80-qr-wrapper">
+                  <img class="cr80-qr-image" src="/api/cards/${currentCard.id}/qr" alt="Verification QR" />
+                </div>
+                <span class="cr80-qr-label">SCAN TO VERIFY</span>
               </div>
-              <div class="cr80-back-instruction">
-                Scan with any smartphone camera to verify authentic credentials against official live records.
+              <div class="cr80-back-info">
+                <div class="cr80-back-instruction">
+                  Scan with any smartphone camera to verify live credential authenticity against official records.
+                </div>
+                <div class="cr80-security-text">
+                  Property of ${state.org.name || 'Grace Chapel International'}. Found cards must be returned to Security or Admin Office immediately. Tampering is strictly prohibited.
+                </div>
               </div>
             </div>
             <div class="cr80-footer">
-              <span>Property of ${state.org.name}</span>
-              <span>Status: ${currentCard.status.toUpperCase()}</span>
+              <span class="cr80-footer-text">STATUS: ${currentCard.status.toUpperCase()}</span>
+              <span class="cr80-footer-text">&bull; AUTHORIZED CREDENTIAL</span>
             </div>
           </div>
         </div>
@@ -1550,7 +1710,7 @@ async function renderCardForPerson(personId) {
       printArea.innerHTML = cardHtml;
     }
   } catch (err) {
-    container.innerHTML = `Error: ${err.message}`;
+    container.innerHTML = `<div style="padding: 20px; color: var(--status-revoked); text-align: center;">Error: ${err.message}</div>`;
   }
 }
 
