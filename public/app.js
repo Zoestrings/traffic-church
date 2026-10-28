@@ -231,6 +231,10 @@ function toggleMobileSidebar(force) {
 
 function navigate(route) {
   toggleMobileSidebar(false);
+  if (window.__attendancePollInterval) {
+    clearInterval(window.__attendancePollInterval);
+    window.__attendancePollInterval = null;
+  }
   state.currentRoute = route;
   window.location.hash = route;
   // Cleanup scanner if active
@@ -3211,6 +3215,16 @@ async function closeAttendanceSession() {
 
 async function loadAttendanceLogs() {
   try {
+    // 1. Fetch live aggregates from /api/attendance/stats
+    let stats = null;
+    try {
+      const statsRes = await fetch('/api/attendance/stats', { headers: getAuthHeaders() });
+      if (statsRes.ok) stats = await statsRes.json();
+    } catch (e) {
+      console.warn('Could not fetch attendance stats:', e);
+    }
+
+    // 2. Fetch recorded logs
     const response = await fetch('/api/attendance/logs', { headers: getAuthHeaders() });
     const logs = await response.json();
 
@@ -3220,7 +3234,10 @@ async function loadAttendanceLogs() {
     const paginationText = document.getElementById('attendancePaginationText');
     const statTotalCheckedIn = document.getElementById('statTotalCheckedIn');
     const statScannedToday = document.getElementById('statScannedToday');
+    const statPending = document.getElementById('statPendingCheckIns');
     const quickStatToday = document.getElementById('quickStatToday');
+    const quickStatRegistered = document.getElementById('quickStatRegistered');
+    const quickStatActiveEvents = document.getElementById('quickStatActiveEvents');
     const sideActivity = document.getElementById('sideRecentActivityFeed');
 
     // Default demonstration records matching screenshot if list is fresh
@@ -3232,14 +3249,19 @@ async function loadAttendanceLogs() {
       { check_in_time: '2026-04-29T20:51:00Z', event_name: 'Sunday Service', full_name: 'Fatima Aliyu', position: 'Director of Logistics', id_number: 'GCI-2026-000', scanned_by_name: 'Admin', status: 'checked' }
     ];
 
-    const displayLogs = (Array.isArray(logs) && logs.length > 0) ? logs : mockFeed;
-    const count = (Array.isArray(logs) && logs.length > 0) ? logs.length : 198;
+    const hasRealLogs = Array.isArray(logs) && logs.length > 0;
+    const displayLogs = hasRealLogs ? logs : mockFeed;
+    const totalCount = stats?.totalCheckedIn || (hasRealLogs ? logs.length : 198);
+    const todayCount = stats?.scannedToday || (hasRealLogs ? logs.length : 198);
 
-    if (badge) badge.textContent = `${count} Records`;
-    if (statTotalCheckedIn) statTotalCheckedIn.textContent = count;
-    if (statScannedToday) statScannedToday.textContent = count;
-    if (quickStatToday) quickStatToday.textContent = count;
-    if (paginationText) paginationText.textContent = `Showing 1 - ${Math.min(displayLogs.length, 5)} of ${count} personnel`;
+    if (badge) badge.textContent = `${totalCount} Records`;
+    if (statTotalCheckedIn) statTotalCheckedIn.textContent = totalCount;
+    if (statScannedToday) statScannedToday.textContent = todayCount;
+    if (statPending && stats?.pending) statPending.textContent = stats.pending;
+    if (quickStatToday) quickStatToday.textContent = todayCount;
+    if (quickStatRegistered && stats?.totalRegistered) quickStatRegistered.textContent = Number(stats.totalRegistered).toLocaleString();
+    if (quickStatActiveEvents && stats?.activeEvents !== undefined) quickStatActiveEvents.textContent = stats.activeEvents;
+    if (paginationText) paginationText.textContent = `Showing 1 - ${Math.min(displayLogs.length, 5)} of ${totalCount} personnel`;
 
     // 1. Populate Desktop Table
     if (tbody) {
@@ -3334,12 +3356,19 @@ async function loadAttendanceLogs() {
 
     // 3. Populate Recent Activity Stream in Right Side Card
     if (sideActivity) {
-      const recentItems = [
-        { name: 'Samuel Adeleke', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 09:05 PM', status: 'verified' },
-        { name: 'Oluwaseun Ajayi', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 09:04 PM', status: 'verified' },
-        { name: 'Ibrahim Bello', text: 'Check-in pending - Sunday Service', time: 'Apr 29, 2026 &bull; 08:46 PM', status: 'pending' },
-        { name: 'Fatima Aliyu', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 08:42 PM', status: 'verified' }
-      ];
+      const recentItems = hasRealLogs 
+        ? logs.slice(0, 5).map(l => ({
+            name: l.full_name,
+            text: `Checked in - ${l.event_name}`,
+            time: new Date(l.check_in_time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            status: 'verified'
+          }))
+        : [
+            { name: 'Samuel Adeleke', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 09:05 PM', status: 'verified' },
+            { name: 'Oluwaseun Ajayi', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 09:04 PM', status: 'verified' },
+            { name: 'Ibrahim Bello', text: 'Check-in pending - Sunday Service', time: 'Apr 29, 2026 &bull; 08:46 PM', status: 'pending' },
+            { name: 'Fatima Aliyu', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 08:42 PM', status: 'verified' }
+          ];
 
       sideActivity.innerHTML = recentItems.map(item => `
         <div class="recent-timeline-item">
@@ -3359,6 +3388,11 @@ async function loadAttendanceLogs() {
     }
 
     if (window.lucide) lucide.createIcons();
+
+    // 4. Live Polling every 30 seconds while on attendance view
+    if (!window.__attendancePollInterval && state.currentRoute === 'attendance') {
+      window.__attendancePollInterval = setInterval(loadAttendanceLogs, 30000);
+    }
 
   } catch (err) {
     const tbody = document.getElementById('attendanceTableBody');
