@@ -6,19 +6,7 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/verify/(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/p/(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/register",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/((?!api/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],

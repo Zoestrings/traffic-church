@@ -2,6 +2,41 @@
 // APEX ENTERPRISE IDENTITY & QR VERIFICATION SPA
 // ==============================================================================
 
+// --- INITIAL ROUTING CHECK (Immediate Verification Interceptor) ---
+// This runs synchronously before anything else in the app loads
+(function checkForVerification() {
+  const path = window.location.pathname;
+  const pathParts = path.split('/').filter(Boolean);
+  
+  // Check if current URL is a QR verification route (/verify/:token or /p/:token)
+  if (path.startsWith('/verify/') || path.startsWith('/p/') || (pathParts.length >= 2 && (pathParts[0] === 'verify' || pathParts[0] === 'p'))) {
+    const token = pathParts[pathParts.length - 1];
+    
+    // Set global flags so no background or deferred router redirects kick the user to login/dashboard
+    window.__IS_VERIFICATION_ROUTE__ = true;
+    window.__VERIFICATION_TOKEN__ = token;
+
+    function mountVerify() {
+      // Hide any legacy shell elements if present
+      const sidebar = document.querySelector('.sidebar');
+      if (sidebar) sidebar.style.display = 'none';
+      const topbar = document.querySelector('.topbar');
+      if (topbar) topbar.style.display = 'none';
+
+      const root = document.getElementById('appRoot') || document.body;
+      if (root) {
+        renderPublicVerifyView(root, token);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', mountVerify, { once: true });
+    } else {
+      mountVerify();
+    }
+  }
+})();
+
 const state = {
   user: null,
   org: null,
@@ -109,17 +144,8 @@ function handleRouting() {
   const path = window.location.pathname;
   const hash = window.location.hash;
 
-  // 1. Detect QR Code Verification Route (e.g., /verify/abc123 or /p/abc123)
-  if (path.startsWith('/verify/') || path.startsWith('/p/')) {
-    const token = path.split('/').filter(Boolean).pop();
-    if (!token) return;
-    
-    state.currentRoute = 'public-verify';
-    state.verifyToken = token;
-    const container = document.getElementById('appRoot');
-    if (container) {
-      renderPublicVerifyView(container);
-    }
+  // 1. Prevent router from interfering if on verification route
+  if (window.__IS_VERIFICATION_ROUTE__ || path.startsWith('/verify/') || path.startsWith('/p/')) {
     return;
   }
 
@@ -153,6 +179,11 @@ async function initSession() {
   const hash = window.location.hash;
   const pathParts = path.split('/').filter(Boolean);
 
+  // If on verification route, do not restore admin session or redirect
+  if (window.__IS_VERIFICATION_ROUTE__ || path.startsWith('/verify/') || path.startsWith('/p/')) {
+    return;
+  }
+
   // If token is in localStorage, attempt to restore user session
   if (localStorage.getItem('auth_token')) {
     try {
@@ -165,14 +196,6 @@ async function initSession() {
     } catch (e) {
       // Session expired or invalid
     }
-  }
-
-  // 1. Check if current URL is a public verification link: /verify/<token> or /p/<token>
-  if (path.startsWith('/verify/') || path.startsWith('/p/') || ((pathParts[0] === 'verify' || pathParts[0] === 'p') && pathParts[1])) {
-    state.currentRoute = 'public-verify';
-    state.verifyToken = pathParts[pathParts.length - 1];
-    render();
-    return;
   }
 
   // 2. Check if current URL is public self-registration: /register or #register
@@ -1003,7 +1026,7 @@ async function verifyToken(token) {
 
   try {
     const data = await api(`/api/verify/${token}`);
-    renderVerificationProfileCard(resultArea, data);
+    await renderVerificationProfileCard(resultArea, data);
   } catch (err) {
     resultArea.innerHTML = `
       <div class="verification-result-card">
@@ -1020,9 +1043,17 @@ async function verifyToken(token) {
   }
 }
 
-function renderVerificationProfileCard(container, data) {
+async function renderVerificationProfileCard(container, data) {
   const outcomeClass = data.outcome; // 'verified', 'revoked', 'expired', 'suspended', 'invalid'
   const isVerified = data.outcome === 'verified';
+  const identityId = data.identity?.id || data.identity?.identityId;
+
+  // Check for active attendance session
+  let activeSession = null;
+  try {
+    const sRes = await fetch('/api/attendance/sessions/active', { headers: getAuthHeaders() });
+    if (sRes.ok) activeSession = await sRes.json();
+  } catch (e) {}
 
   container.innerHTML = `
     <div class="verification-result-card">
@@ -1075,6 +1106,23 @@ function renderVerificationProfileCard(container, data) {
             ${data.identity.phone ? `<div>Phone: <strong>${data.identity.phone}</strong></div>` : ''}
             ${data.identity.email ? `<div>Email: <strong>${data.identity.email}</strong></div>` : ''}
             ${data.identity.emergencyContactPhone ? `<div>Emergency Contact: <strong>${data.identity.emergencyContactName} (${data.identity.emergencyContactPhone})</strong></div>` : ''}
+          </div>
+        ` : ''}
+
+        <!-- Active Roll-Call Attendance Box -->
+        ${activeSession ? `
+          <div style="margin-top: 14px; margin-bottom: 14px; padding: 14px 16px; background: #0f172a; border-radius: 8px; border: 1px solid #1e293b; color: #ffffff;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="font-size: 11px; font-weight: 800; color: #10b981; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+                ACTIVE LIST: <span style="color: #ffffff;">${escapeHtml(activeSession.event_name)}</span>
+              </div>
+              <span style="font-size: 10.5px; color: #94a3b8; font-family: monospace;">INSTANT CHECK-IN</span>
+            </div>
+            <button id="btnCheckIn_${identityId}" onclick="logAttendance('${identityId}', '${escapeHtml(activeSession.event_name)}')" class="btn btn-primary" style="width: 100%; background: #10b981; border-color: #10b981; color: #ffffff; padding: 11px; font-size: 13.5px; font-weight: 700; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);">
+              ✓ Mark as Present (${escapeHtml(activeSession.event_name)})
+            </button>
+            <div id="attendanceMsg" style="font-size: 12px; margin-top: 8px; display: none; font-weight: 600; text-align: center;"></div>
           </div>
         ` : ''}
 
@@ -2453,7 +2501,10 @@ function printEnrollmentFlyer() {
 }
 
 // --- 10. PUBLIC SCAN VERIFICATION VIEW WITH TERMINAL OVERLAY ---
-async function renderPublicVerifyView(container) {
+async function renderPublicVerifyView(container, explicitToken) {
+  const token = explicitToken || state.verifyToken || window.__VERIFICATION_TOKEN__ || window.location.pathname.split('/').filter(Boolean).pop();
+  state.verifyToken = token;
+
   // 1. Initial State: Stark Terminal Overlay + Profile Screen underneath
   container.innerHTML = `
     <!-- Verification Transition Overlay -->
@@ -2476,9 +2527,32 @@ async function renderPublicVerifyView(container) {
   const overlayOutcome = document.getElementById('overlayOutcome');
   const profileContainer = document.getElementById('publicProfileContainer');
 
+  if (!token) {
+    if (overlayStatus) overlayStatus.textContent = 'ACCESS REJECTED';
+    if (overlayId) overlayId.textContent = 'NO TOKEN PROVIDED';
+    if (overlayOutcome) {
+      overlayOutcome.style.display = 'inline-flex';
+      overlayOutcome.className = 'overlay-outcome revoked';
+      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#10007;</span> INVALID VERIFICATION LINK`;
+    }
+    return;
+  }
+
   try {
-    // 2. Fetch live cryptographic verification from backend
-    const data = await api(`/api/verify/${state.verifyToken}`);
+    // 2. Fetch live cryptographic verification from relative Vercel Serverless Function route
+    const authHeader = localStorage.getItem('auth_token') ? { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } : {};
+    const res = await fetch(`/api/verify/${encodeURIComponent(token)}`, {
+      headers: {
+        'Accept': 'application/json',
+        ...authHeader
+      }
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.message || data.error || `Verification failed (HTTP ${res.status})`);
+    }
     
     // Normalize outcome & payload across schema versions (data-mapping point 1 & 2)
     const outcome = (data.outcome || data.status || 'invalid').toLowerCase();
@@ -2506,7 +2580,7 @@ async function renderPublicVerifyView(container) {
     }
 
     // 5. Render the dark Command Centre profile underneath
-    renderProfilePage(profileContainer, data);
+    await renderProfilePage(profileContainer, data);
 
     // 6. Hold for 1.5 seconds so security officers can inspect the ID
     setTimeout(() => {
@@ -2519,7 +2593,7 @@ async function renderPublicVerifyView(container) {
     }, 1500);
 
   } catch (err) {
-    // Error / Invalid Token Terminal Fallback
+    // Error / Invalid Token Terminal Fallback (Maintains terminal UI without redirecting to login)
     if (overlayStatus) {
       overlayStatus.textContent = 'ACCESS REJECTED';
       overlayStatus.style.color = '#ef4444';
@@ -2536,7 +2610,7 @@ async function renderPublicVerifyView(container) {
   }
 }
 
-function renderProfilePage(container, data) {
+async function renderProfilePage(container, data) {
   const p = data.identity || {};
   const c = data.card || {};
   const outcome = (data.outcome || data.status || 'invalid').toLowerCase();
@@ -2559,6 +2633,17 @@ function renderProfilePage(container, data) {
 
   const currentUser = state.user || data.viewer?.isAuthenticated || (localStorage.getItem('auth_token') ? true : false);
   const identityDbId = p.identityId || p.id || (data.identity ? (data.identity.identityId || data.identity.id) : '');
+
+  // Check if an active attendance session is running
+  let activeSession = null;
+  try {
+    const sRes = await fetch('/api/attendance/sessions/active', { headers: getAuthHeaders() });
+    if (sRes.ok) {
+      activeSession = await sRes.json();
+    }
+  } catch (e) {
+    // No active session
+  }
 
   container.innerHTML = `
     <div class="command-profile-card">
@@ -2629,72 +2714,122 @@ function renderProfilePage(container, data) {
 
     <!-- Attendance Quick Check-In (Visible to Authenticated Admins / Officers) -->
     ${currentUser ? `
-      <div style="margin-top: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08);">
-        <div style="font-size: 11px; font-weight: 800; color: #166534; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase;">
-          &#10003; MARK PRESENT &bull; ATTENDANCE CHECK-IN
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <input type="text" id="eventName" value="Sunday Service" placeholder="e.g. Sunday Service, Leadership Outreach" style="flex: 1; min-width: 170px; padding: 9px 12px; border: 1px solid #86efac; border-radius: 6px; font-size: 13px; color: #0f172a; outline: none; background: #ffffff;">
-          <button onclick="logAttendance('${identityDbId}')" class="btn btn-primary" style="background: #16a34a; border-color: #16a34a; color: #ffffff; padding: 9px 16px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer;">
-            Check In
+      ${activeSession ? `
+        <div style="margin-top: 16px; background: #0f172a; border: 1px solid #1e293b; padding: 18px 20px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); text-align: left;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 11px; font-weight: 800; color: #10b981; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+              ACTIVE ROLL-CALL LIST
+            </div>
+            <span style="font-size: 10.5px; color: #94a3b8; font-family: monospace;">INSTANT SCAN RECORD</span>
+          </div>
+          <div style="font-size: 17px; font-weight: 800; color: #ffffff; margin-bottom: 14px; letter-spacing: -0.01em;">
+            ${escapeHtml(activeSession.event_name)}
+          </div>
+          <button id="btnCheckIn_${identityDbId}" onclick="logAttendance('${identityDbId}', '${escapeHtml(activeSession.event_name)}')" class="btn btn-primary" style="width: 100%; background: #10b981; border-color: #10b981; color: #ffffff; padding: 12px; font-size: 14px; font-weight: 800; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+            ✓ Mark as Present (${escapeHtml(activeSession.event_name)})
           </button>
+          <div id="attendanceMsg" style="font-size: 12px; margin-top: 10px; display: none; font-weight: 600; text-align: center;"></div>
         </div>
-        <div id="attendanceMsg" style="font-size: 12px; margin-top: 8px; display: none; font-weight: 600;"></div>
-      </div>
+      ` : `
+        <div style="margin-top: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; padding: 14px 16px; border-radius: 8px;">
+          <div style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 8px;">
+            No Active Roll-Call List &bull; Enter Event Name
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input type="text" id="manualEventName" placeholder="e.g. Sunday Service" style="flex: 1; min-width: 170px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #0f172a; outline: none; background: #ffffff;">
+            <button onclick="logAttendance('${identityDbId}', document.getElementById('manualEventName').value)" class="btn btn-primary" style="background: #1e293b; color: #ffffff; padding: 9px 16px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer;">
+              Mark Present
+            </button>
+          </div>
+          <div id="attendanceMsg" style="font-size: 12px; margin-top: 8px; display: none; font-weight: 600;"></div>
+        </div>
+      `}
     ` : ''}
   `;
 }
 
 // --- Attendance Actions ---
-async function logAttendance(identityId) {
-  const eventNameInput = document.getElementById('eventName');
-  const eventName = eventNameInput ? eventNameInput.value.trim() : '';
+async function logAttendance(identityId, explicitEventName) {
   const msgEl = document.getElementById('attendanceMsg');
+  const btn = document.getElementById(`btnCheckIn_${identityId}`) || 
+              document.querySelector(`button[onclick*="logAttendance('${identityId}'"]`);
   
-  if (!eventName) {
-    if (msgEl) {
-      msgEl.style.display = 'block';
-      msgEl.style.color = '#dc2626';
-      msgEl.textContent = "Please enter an event name.";
-    }
-    return;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Recording attendance...';
   }
 
-  if (!identityId) {
-    if (msgEl) {
-      msgEl.style.display = 'block';
-      msgEl.style.color = '#dc2626';
-      msgEl.textContent = "Identity ID not found on card.";
-    }
-    return;
+  if (msgEl) {
+    msgEl.style.display = 'block';
+    msgEl.style.color = '#64748b';
+    msgEl.textContent = 'Recording attendance...';
   }
 
   try {
+    let eventName = (explicitEventName || '').trim();
+    if (!eventName) {
+      // Auto-fetch active session
+      const sRes = await fetch('/api/attendance/sessions/active', { headers: getAuthHeaders() });
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        eventName = sData.event_name;
+      }
+    }
+
+    if (!eventName) {
+      const manualInput = document.getElementById('manualEventName');
+      if (manualInput && manualInput.value.trim()) {
+        eventName = manualInput.value.trim();
+      }
+    }
+
     const response = await fetch('/api/attendance/check-in', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ identity_id: identityId, event_name: eventName })
     });
-    
+
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Failed to log attendance");
+    if (!response.ok) throw new Error(data.error || 'Failed to log attendance');
+
+    if (btn) {
+      btn.style.background = '#059669';
+      btn.style.borderColor = '#059669';
+      btn.innerText = `✓ Marked Present (${data.event_name || eventName || 'Recorded'})`;
+    }
 
     if (msgEl) {
       msgEl.style.display = 'block';
-      msgEl.style.color = '#166534';
-      msgEl.textContent = "✓ Successfully Checked In (" + eventName + ")";
+      msgEl.style.color = '#10b981';
+      msgEl.textContent = `✓ SUCCESS: Added to ${data.event_name || eventName || 'list'}.`;
     }
   } catch (err) {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '✓ Retry Mark as Present';
+    }
     if (msgEl) {
       msgEl.style.display = 'block';
-      msgEl.style.color = '#dc2626';
-      msgEl.textContent = err.message;
+      msgEl.style.color = '#f43f5e';
+      msgEl.textContent = `ERROR: ${err.message}`;
     }
   }
 }
 
 // --- Attendance Register Dashboard View ---
 async function renderAttendanceRegisterView(container) {
+  // 1. Fetch currently active session
+  let activeSession = null;
+  try {
+    const res = await fetch('/api/attendance/sessions/active', { headers: getAuthHeaders() });
+    if (res.ok) {
+      activeSession = await res.json();
+    }
+  } catch (e) {
+    // No active session
+  }
+
   container.innerHTML = `
     <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
       <div>
@@ -2705,7 +2840,7 @@ async function renderAttendanceRegisterView(container) {
           </span>
         </div>
         <div class="page-description">
-          Track personnel presence for services, operations, and security marshals.
+          Create an active event list, then scan badges to automatically record personnel.
         </div>
       </div>
       <div style="display: flex; gap: 8px;">
@@ -2717,12 +2852,66 @@ async function renderAttendanceRegisterView(container) {
         </button>
       </div>
     </div>
-    
+
+    <!-- SESSION CONTROLLER PANEL -->
+    <div class="card" style="margin-bottom: 24px; padding: 22px 24px; border-radius: var(--radius-lg); ${activeSession ? 'background: linear-gradient(135deg, #090e1a 0%, #0f172a 100%); border: 1px solid #1e293b; color: #ffffff; box-shadow: var(--shadow-md);' : 'background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);'}">
+      ${activeSession ? `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
+              <span style="font-size: 11px; font-weight: 800; color: #10b981; letter-spacing: 1.5px; text-transform: uppercase;">ACTIVE ROLL-CALL LIST</span>
+            </div>
+            <div style="font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; font-family: var(--font-display);">
+              ${escapeHtml(activeSession.event_name)}
+            </div>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+              Started ${new Date(activeSession.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} &bull; Any badge scanned now attaches to this event automatically.
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button onclick="navigate('scan')" class="btn btn-primary" style="background: #d4af37; border-color: #d4af37; color: #090e1a; font-weight: 800; padding: 10px 18px; box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);">
+              <i data-lucide="camera" style="width: 15px; height: 15px;"></i> 📷 Scan ID to Check-In
+            </button>
+            <button onclick="closeAttendanceSession()" class="btn btn-secondary btn-sm" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); color: #f1f5f9; padding: 8px 14px;">
+              End / Close List
+            </button>
+          </div>
+        </div>
+      ` : `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text-main); font-family: var(--font-display);">
+              Create New Attendance Session
+            </div>
+            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 3px;">
+              Label the occasion once (e.g. Sunday Service) so all scans check in without repeated typing.
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="newSessionName" placeholder="e.g. Sunday Main Service" style="padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-size: 13px; min-width: 240px; outline: none; background: #f8fafc;" onkeydown="if(event.key === 'Enter') startAttendanceSession()" />
+            <button onclick="startAttendanceSession()" class="btn btn-primary" style="background: #10b981; border-color: #10b981; color: #ffffff; font-weight: 700; padding: 10px 18px;">
+              Start List
+            </button>
+          </div>
+        </div>
+      `}
+    </div>
+
+    <!-- LIVE LOGS TABLE -->
     <div class="data-card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; box-shadow: var(--shadow-sm);">
+      <div style="padding: 14px 18px; border-bottom: 1px solid var(--border-color); background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+          Recorded Check-Ins Feed
+        </span>
+        <span id="attendanceCountBadge" class="status-chip active" style="font-size: 11px;">
+          Loading...
+        </span>
+      </div>
       <div style="overflow-x: auto;">
         <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
-            <tr style="background: var(--bg-subtle); border-bottom: 1px solid var(--border-color); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+            <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
               <th style="padding: 12px 16px;">Date &amp; Time</th>
               <th style="padding: 12px 16px;">Event Name</th>
               <th style="padding: 12px 16px;">Personnel Name</th>
@@ -2740,17 +2929,67 @@ async function renderAttendanceRegisterView(container) {
 
   if (window.lucide) lucide.createIcons();
 
+  await loadAttendanceLogs();
+}
+
+async function startAttendanceSession() {
+  const input = document.getElementById('newSessionName');
+  const eventName = input ? input.value.trim() : '';
+  if (!eventName) {
+    alert('Please enter an event or occasion name.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/attendance/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ event_name: eventName })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to start session');
+
+    renderAttendanceRegisterView(document.getElementById('pageContent'));
+  } catch (err) {
+    alert('Failed to start session: ' + err.message);
+  }
+}
+
+async function closeAttendanceSession() {
+  if (!confirm('Are you sure you want to close the current active attendance list?')) return;
+
+  try {
+    const res = await fetch('/api/attendance/sessions/close', {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to close session');
+    }
+    renderAttendanceRegisterView(document.getElementById('pageContent'));
+  } catch (err) {
+    alert('Failed to close session: ' + err.message);
+  }
+}
+
+async function loadAttendanceLogs() {
   try {
     const response = await fetch('/api/attendance/logs', { headers: getAuthHeaders() });
     const logs = await response.json();
 
     const tbody = document.getElementById('attendanceTableBody');
+    const badge = document.getElementById('attendanceCountBadge');
     if (!tbody) return;
 
     if (!Array.isArray(logs) || logs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">No attendance records found yet. Scan an ID card or click Check In to record attendance.</td></tr>';
+      if (badge) badge.textContent = '0 Records';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">No attendance records found yet. Scan an ID card to record attendance.</td></tr>';
       return;
     }
+
+    if (badge) badge.textContent = `${logs.length} Recorded`;
 
     tbody.innerHTML = logs.map(log => `
       <tr style="border-bottom: 1px solid var(--border-color); font-size: 13px;">
