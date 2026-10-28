@@ -1245,6 +1245,315 @@
       gap: 8px;
       background: #f9fafb;
     }
+
+    /* =====================================================
+       TERMINAL AUTHENTICATION TRANSITION OVERLAY
+       ===================================================== */
+    #verification-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #05080f;
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      opacity: 1;
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #verification-overlay.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .overlay-content {
+      text-align: center;
+      padding: 32px 24px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .overlay-radar {
+      width: 48px;
+      height: 48px;
+      border: 2px solid rgba(37, 99, 235, 0.25);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .overlay-status {
+      color: #64748b;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      animation: pulse 1s infinite alternate;
+    }
+
+    .overlay-id {
+      color: #ffffff;
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      margin-bottom: 18px;
+      font-family: 'JetBrains Mono', monospace;
+      text-shadow: 0 0 24px rgba(255, 255, 255, 0.15);
+      word-break: break-all;
+    }
+
+    .overlay-outcome {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      padding: 8px 20px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .overlay-outcome.verified {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+    }
+
+    .overlay-outcome.revoked {
+      color: #f43f5e;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.2);
+    }
+
+    .overlay-outcome.suspended {
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+    }
+
+    /* Public Verification Screen & Command Profile Dossier */
+    .public-profile-screen {
+      min-height: 100vh;
+      background: #090d16;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .command-profile-card {
+      width: 100%;
+      max-width: 480px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+      color: #f8fafc;
+      animation: floatUp 0.5s ease-out;
+    }
+
+    @keyframes floatUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .command-profile-header {
+      background: linear-gradient(90deg, #090d16 0%, #1e293b 100%);
+      border-bottom: 2px solid #d4af37;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .command-crest {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #d4af37 0%, #b8922a 100%);
+      border-radius: 50%;
+      color: #090d16;
+      font-weight: 800;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+    }
+
+    .command-org-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      font-family: var(--font-display);
+    }
+
+    .command-org-sub {
+      font-size: 8.5px;
+      color: #d4af37;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .command-status-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      padding: 3px 9px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .command-status-badge.verified { background: #10b981; color: #ffffff; }
+    .command-status-badge.revoked { background: #e11d48; color: #ffffff; }
+    .command-status-badge.suspended { background: #f59e0b; color: #000000; }
+
+    .command-profile-body {
+      padding: 22px 18px;
+    }
+
+    .command-avatar-strip {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .command-profile-photo {
+      width: 82px;
+      height: 98px;
+      border-radius: 4px;
+      object-fit: cover;
+      border: 1.5px solid #334155;
+      background: #1e293b;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .command-profile-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      font-family: var(--font-display);
+      line-height: 1.25;
+    }
+
+    .command-profile-rank {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 3px;
+    }
+
+    .command-profile-dept {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .command-id-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #d4af37;
+      background: #090d16;
+      padding: 2.5px 8px;
+      border-radius: 2px;
+      display: inline-block;
+      margin-top: 6px;
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      letter-spacing: 0.8px;
+    }
+
+    .command-grid-matrix {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .matrix-cell {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-radius: 4px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .matrix-label {
+      font-size: 8px;
+      color: #64748b;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .matrix-value {
+      font-size: 12px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-top: 3px;
+    }
+
+    .matrix-value.verified { color: #10b981; }
+    .matrix-value.revoked { color: #f43f5e; }
+    .matrix-value.suspended { color: #f59e0b; }
+
+    .command-dispatch-box {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 11.5px;
+      margin-bottom: 12px;
+    }
+
+    .dispatch-title {
+      font-size: 8.5px;
+      font-weight: 700;
+      color: #d4af37;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .dispatch-row {
+      display: flex;
+      justify-content: space-between;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+      font-size: 11.5px;
+    }
+
+    .command-profile-footer {
+      background: #090d16;
+      border-top: 1px solid #1e293b;
+      padding: 9px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9px;
+      color: #64748b;
+      letter-spacing: 0.5px;
+    }
   </style>
 </head>
 <body>

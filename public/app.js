@@ -102,9 +102,9 @@ async function api(url, options = {}) {
 
 // --- Session Verification ---
 async function initSession() {
-  // Check if current URL is a public verification link: /verify/<token>
+  // Check if current URL is a public verification link: /verify/<token> or /p/<token>
   const pathParts = window.location.pathname.split('/').filter(Boolean);
-  if (pathParts[0] === 'verify' && pathParts[1]) {
+  if ((pathParts[0] === 'verify' || pathParts[0] === 'p') && pathParts[1]) {
     state.currentRoute = 'public-verify';
     state.verifyToken = pathParts[1];
     render();
@@ -1866,36 +1866,178 @@ async function loadSettingsView(container) {
   }
 }
 
-// --- 10. PUBLIC SCAN VERIFICATION VIEW ---
+// --- 10. PUBLIC SCAN VERIFICATION VIEW WITH TERMINAL OVERLAY ---
 async function renderPublicVerifyView(container) {
+  // 1. Initial State: Stark Terminal Overlay + Profile Screen underneath
   container.innerHTML = `
-    <div style="min-height: 100vh; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
-      <div id="publicVerifyContent" style="width: 100%; max-width: 440px;">
-        <div class="card" style="text-align: center; padding: 30px;">
-          <div style="color: var(--text-muted);">Verifying credential token...</div>
+    <!-- Verification Transition Overlay -->
+    <div id="verification-overlay">
+      <div class="overlay-content">
+        <div class="overlay-radar"></div>
+        <div class="overlay-status" id="overlayStatus">QUERYING IDENTITY DATABASE...</div>
+        <div class="overlay-id" id="overlayIdText">GCI-••••-••••</div>
+        <div class="overlay-outcome" id="overlayOutcome" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Dark Command Centre Profile (Revealed smoothly underneath) -->
+    <div class="public-profile-screen" id="publicProfileContainer" style="opacity: 0;"></div>
+  `;
+
+  const overlay = document.getElementById('verification-overlay');
+  const overlayId = document.getElementById('overlayIdText');
+  const overlayStatus = document.getElementById('overlayStatus');
+  const overlayOutcome = document.getElementById('overlayOutcome');
+  const profileContainer = document.getElementById('publicProfileContainer');
+
+  try {
+    // 2. Fetch live cryptographic verification from backend
+    const data = await api(`/api/verify/${state.verifyToken}`);
+    
+    // Normalize outcome & payload across schema versions (data-mapping point 1 & 2)
+    const outcome = (data.outcome || data.status || 'invalid').toLowerCase();
+    const isVerified = outcome === 'verified';
+    const p = data.identity || {};
+    const permanentId = p.idNumber || p.id_number || p.identity_id || 'AUTHENTICATED';
+
+    // 3. Inject Permanent ID into stark terminal screen
+    overlayId.textContent = permanentId;
+    overlayStatus.style.display = 'none';
+
+    // 4. Show Outcome Badge (Verified, Revoked, or Suspended)
+    overlayOutcome.style.display = 'inline-flex';
+    if (isVerified) {
+      overlayOutcome.className = 'overlay-outcome verified';
+      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#10003;</span> VERIFIED ACTIVE`;
+    } else if (outcome === 'revoked') {
+      overlayOutcome.className = 'overlay-outcome revoked';
+      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#10007;</span> CREDENTIAL REVOKED`;
+      overlayId.style.color = '#ef4444';
+    } else {
+      overlayOutcome.className = 'overlay-outcome suspended';
+      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#9888;</span> ${outcome.toUpperCase()}`;
+      overlayId.style.color = '#f59e0b';
+    }
+
+    // 5. Render the dark Command Centre profile underneath
+    renderProfilePage(profileContainer, data);
+
+    // 6. Hold for 1.5 seconds so security officers can inspect the ID
+    setTimeout(() => {
+      overlay.classList.add('fade-out');
+      profileContainer.style.opacity = '1';
+      profileContainer.style.transition = 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+      setTimeout(() => { 
+        if (overlay) overlay.style.display = 'none'; 
+      }, 600);
+    }, 1500);
+
+  } catch (err) {
+    // Error / Invalid Token Terminal Fallback
+    if (overlayStatus) {
+      overlayStatus.textContent = 'ACCESS REJECTED';
+      overlayStatus.style.color = '#ef4444';
+    }
+    if (overlayId) {
+      overlayId.textContent = 'ACCESS DENIED';
+      overlayId.style.color = '#ef4444';
+    }
+    if (overlayOutcome) {
+      overlayOutcome.style.display = 'inline-flex';
+      overlayOutcome.className = 'overlay-outcome revoked';
+      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#10007;</span> ${err.message || 'INVALID CREDENTIAL'}`;
+    }
+  }
+}
+
+function renderProfilePage(container, data) {
+  const p = data.identity || {};
+  const c = data.card || {};
+  const outcome = (data.outcome || data.status || 'invalid').toLowerCase();
+  const isVerified = outcome === 'verified';
+  const badgeClass = isVerified ? 'verified' : (outcome === 'revoked' ? 'revoked' : 'suspended');
+
+  const idNumber = p.idNumber || p.id_number || '—';
+  const fullName = p.fullName || p.full_name || 'Registered Personnel';
+  const photoUrl = p.photoUrl || p.photo_url || '';
+  const position = p.position || 'Staff Marshal';
+  const department = p.department || 'Operations Directorate';
+  const branch = p.branch || 'Main Sanctuary';
+  const cardNumber = c.cardNumber || c.card_number || '—';
+  const cardStatus = (c.status || outcome).toUpperCase();
+  const issueDate = c.issueDate || c.issue_date;
+  const expiryDate = c.expiryDate || c.expiry_date;
+  const phone = p.phone || '';
+  const emergencyPhone = p.emergencyContactPhone || p.emergency_contact_phone || '';
+  const emergencyName = p.emergencyContactName || p.emergency_contact_name || 'Command';
+
+  container.innerHTML = `
+    <div class="command-profile-card">
+      <!-- Institutional Top Header -->
+      <div class="command-profile-header">
+        <div style="display: flex; align-items: center; gap: 11px;">
+          <div class="command-crest">GCI</div>
+          <div>
+            <div class="command-org-title">${data.organisation?.name || 'Grace Chapel International'}</div>
+            <div class="command-org-sub">Institutional Identity Directorate</div>
+          </div>
         </div>
+        <div class="command-status-badge ${badgeClass}">
+          ${outcome.toUpperCase()}
+        </div>
+      </div>
+
+      <!-- Identity Dossier Body -->
+      <div class="command-profile-body">
+        <div class="command-avatar-strip">
+          <img class="command-profile-photo" 
+               src="${photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}" 
+               alt="${fullName}" 
+               onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=090d16&color=d4af37&bold=true'" />
+          <div style="min-width: 0; flex: 1;">
+            <div class="command-profile-name">${p.title ? p.title + ' ' : ''}${fullName}</div>
+            <div class="command-profile-rank">${position}</div>
+            <div class="command-profile-dept">${department} &bull; ${branch}</div>
+            <div class="command-id-tag">${idNumber}</div>
+          </div>
+        </div>
+
+        <!-- Telemetry Matrix -->
+        <div class="command-grid-matrix">
+          <div class="matrix-cell">
+            <span class="matrix-label">CARD NUMBER</span>
+            <span class="matrix-value font-mono">${cardNumber}</span>
+          </div>
+          <div class="matrix-cell">
+            <span class="matrix-label">RECORD STATUS</span>
+            <span class="matrix-value ${badgeClass}">${cardStatus}</span>
+          </div>
+          <div class="matrix-cell">
+            <span class="matrix-label">ISSUED DATE</span>
+            <span class="matrix-value font-mono">${issueDate ? issueDate.split('T')[0] : '2026-01-01'}</span>
+          </div>
+          <div class="matrix-cell">
+            <span class="matrix-label">EXPIRY DATE</span>
+            <span class="matrix-value font-mono">${expiryDate ? expiryDate.split('T')[0] : 'INDEFINITE'}</span>
+          </div>
+        </div>
+
+        ${phone || emergencyPhone ? `
+          <div class="command-dispatch-box">
+            <div class="dispatch-title">OPERATIONAL CONTACT &amp; DISPATCH</div>
+            ${phone ? `<div class="dispatch-row"><span>Official Line:</span> <strong>${phone}</strong></div>` : ''}
+            ${emergencyPhone ? `<div class="dispatch-row"><span>Emergency Line:</span> <strong>${emergencyName} (${emergencyPhone})</strong></div>` : ''}
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Security Audit Footer -->
+      <div class="command-profile-footer">
+        <span>SECURITY TOKEN VERIFIED LIVE</span>
+        <span class="font-mono">${new Date(data.timestamp || Date.now()).toLocaleTimeString()} UTC</span>
       </div>
     </div>
   `;
-
-  const target = document.getElementById('publicVerifyContent');
-  try {
-    const data = await api(`/api/verify/${state.verifyToken}`);
-    renderVerificationProfileCard(target, data);
-  } catch (err) {
-    target.innerHTML = `
-      <div class="verification-result-card">
-        <div class="verif-banner revoked">
-          <i data-lucide="shield-alert" style="width: 24px; height: 24px;"></i>
-          <div>
-            <div style="font-weight: 700; font-size: 15px;">Credential Not Verified</div>
-            <div style="font-size: 12px; opacity: 0.9;">${err.message}</div>
-          </div>
-        </div>
-      </div>
-    `;
-    lucide.createIcons();
-  }
 }
 
 // Initialize on Load
