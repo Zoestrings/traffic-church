@@ -68,12 +68,16 @@ function formatRelativeTime(dateString) {
 }
 
 // --- API Client Helpers ---
+function getAuthHeaders() {
+  const token = localStorage.getItem('auth_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 async function api(url, options = {}) {
   try {
-    const token = localStorage.getItem('auth_token');
     const headers = {
       'Accept': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...getAuthHeaders(),
       ...(options.headers || {})
     };
 
@@ -100,42 +104,93 @@ async function api(url, options = {}) {
   }
 }
 
+// --- FRONTEND ROUTER ---
+function handleRouting() {
+  const path = window.location.pathname;
+  const hash = window.location.hash;
+
+  // 1. Detect QR Code Verification Route (e.g., /verify/abc123 or /p/abc123)
+  if (path.startsWith('/verify/') || path.startsWith('/p/')) {
+    const token = path.split('/').filter(Boolean).pop();
+    if (!token) return;
+    
+    state.currentRoute = 'public-verify';
+    state.verifyToken = token;
+    const container = document.getElementById('appRoot');
+    if (container) {
+      renderPublicVerifyView(container);
+    }
+    return;
+  }
+
+  // 2. Normal Hash / Path Self-Registration
+  if (path === '/register' || hash === '#register' || hash === '#public-register') {
+    state.currentRoute = 'public-register';
+    const container = document.getElementById('appRoot');
+    if (container) {
+      loadPublicRegisterView(container);
+    }
+    return;
+  }
+
+  // 3. Normal App Routing (Hash Navigation)
+  if (hash) {
+    const route = hash.replace('#', '');
+    if (state.currentRoute !== route) {
+      state.currentRoute = route;
+      if (state.user) {
+        renderCurrentRoute();
+      } else {
+        render();
+      }
+    }
+  }
+}
+
 // --- Session Verification ---
 async function initSession() {
-  const pathParts = window.location.pathname.split('/').filter(Boolean);
-  
+  const path = window.location.pathname;
+  const hash = window.location.hash;
+  const pathParts = path.split('/').filter(Boolean);
+
+  // If token is in localStorage, attempt to restore user session
+  if (localStorage.getItem('auth_token')) {
+    try {
+      const session = await api('/api/auth/me');
+      if (session && session.user) {
+        state.user = session.user;
+        state.org = session.organisation;
+        state.role = session.role;
+      }
+    } catch (e) {
+      // Session expired or invalid
+    }
+  }
+
   // 1. Check if current URL is a public verification link: /verify/<token> or /p/<token>
-  if ((pathParts[0] === 'verify' || pathParts[0] === 'p') && pathParts[1]) {
+  if (path.startsWith('/verify/') || path.startsWith('/p/') || ((pathParts[0] === 'verify' || pathParts[0] === 'p') && pathParts[1])) {
     state.currentRoute = 'public-verify';
-    state.verifyToken = pathParts[1];
+    state.verifyToken = pathParts[pathParts.length - 1];
     render();
     return;
   }
 
   // 2. Check if current URL is public self-registration: /register or #register
-  if (pathParts[0] === 'register' || window.location.hash === '#register' || window.location.hash === '#public-register') {
+  if (pathParts[0] === 'register' || hash === '#register' || hash === '#public-register') {
     state.currentRoute = 'public-register';
     render();
     return;
   }
 
-  try {
-    const session = await api('/api/auth/me');
-    if (session && session.user) {
-      state.user = session.user;
-      state.org = session.organisation;
-      state.role = session.role;
-      // Handle hash routing
-      const hash = window.location.hash.replace('#', '') || 'dashboard';
-      state.currentRoute = hash;
-    } else {
-      state.user = null;
-    }
-  } catch (e) {
+  if (state.user) {
+    const route = hash.replace('#', '') || 'dashboard';
+    state.currentRoute = route;
+  } else {
     state.user = null;
   }
   render();
 }
+
 
 function navigate(route) {
   state.currentRoute = route;
@@ -296,6 +351,9 @@ function renderAppShell(container) {
           <a class="nav-item ${state.currentRoute === 'enrollment' ? 'active' : ''}" onclick="navigate('enrollment')">
             <i data-lucide="qr-code"></i> Public Enrollment
           </a>
+          <a class="nav-item ${state.currentRoute === 'attendance' ? 'active' : ''}" onclick="navigate('attendance')">
+            <i data-lucide="clipboard-check"></i> Attendance Register
+          </a>
           <a class="nav-item ${state.currentRoute === 'history' ? 'active' : ''}" onclick="navigate('history')">
             <i data-lucide="history"></i> Verification Log
           </a>
@@ -395,6 +453,9 @@ function renderCurrentRoute() {
       break;
     case 'enrollment':
       renderEnrollmentQRView(container);
+      break;
+    case 'attendance':
+      renderAttendanceRegisterView(container);
       break;
     case 'history':
       loadHistoryView(container);
@@ -2496,6 +2557,9 @@ function renderProfilePage(container, data) {
   const emergencyPhone = p.emergencyContactPhone || p.emergency_contact_phone || '';
   const emergencyName = p.emergencyContactName || p.emergency_contact_name || 'Command';
 
+  const currentUser = state.user || data.viewer?.isAuthenticated || (localStorage.getItem('auth_token') ? true : false);
+  const identityDbId = p.identityId || p.id || (data.identity ? (data.identity.identityId || data.identity.id) : '');
+
   container.innerHTML = `
     <div class="command-profile-card">
       <!-- Institutional Top Header -->
@@ -2562,15 +2626,174 @@ function renderProfilePage(container, data) {
         <span class="font-mono">${new Date(data.timestamp || Date.now()).toLocaleTimeString()} UTC</span>
       </div>
     </div>
+
+    <!-- Attendance Quick Check-In (Visible to Authenticated Admins / Officers) -->
+    ${currentUser ? `
+      <div style="margin-top: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08);">
+        <div style="font-size: 11px; font-weight: 800; color: #166534; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase;">
+          &#10003; MARK PRESENT &bull; ATTENDANCE CHECK-IN
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <input type="text" id="eventName" value="Sunday Service" placeholder="e.g. Sunday Service, Leadership Outreach" style="flex: 1; min-width: 170px; padding: 9px 12px; border: 1px solid #86efac; border-radius: 6px; font-size: 13px; color: #0f172a; outline: none; background: #ffffff;">
+          <button onclick="logAttendance('${identityDbId}')" class="btn btn-primary" style="background: #16a34a; border-color: #16a34a; color: #ffffff; padding: 9px 16px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer;">
+            Check In
+          </button>
+        </div>
+        <div id="attendanceMsg" style="font-size: 12px; margin-top: 8px; display: none; font-weight: 600;"></div>
+      </div>
+    ` : ''}
   `;
 }
 
-// Initialize on Load
+// --- Attendance Actions ---
+async function logAttendance(identityId) {
+  const eventNameInput = document.getElementById('eventName');
+  const eventName = eventNameInput ? eventNameInput.value.trim() : '';
+  const msgEl = document.getElementById('attendanceMsg');
+  
+  if (!eventName) {
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#dc2626';
+      msgEl.textContent = "Please enter an event name.";
+    }
+    return;
+  }
+
+  if (!identityId) {
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#dc2626';
+      msgEl.textContent = "Identity ID not found on card.";
+    }
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/attendance/check-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ identity_id: identityId, event_name: eventName })
+    });
+    
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Failed to log attendance");
+
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#166534';
+      msgEl.textContent = "✓ Successfully Checked In (" + eventName + ")";
+    }
+  } catch (err) {
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#dc2626';
+      msgEl.textContent = err.message;
+    }
+  }
+}
+
+// --- Attendance Register Dashboard View ---
+async function renderAttendanceRegisterView(container) {
+  container.innerHTML = `
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <h1 class="page-title">Attendance Register</h1>
+          <span class="live-pulse-badge">
+            <span class="pulse-dot"></span> Live Log
+          </span>
+        </div>
+        <div class="page-description">
+          Track personnel presence for services, operations, and security marshals.
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary btn-sm" onclick="renderAttendanceRegisterView(document.getElementById('pageContent'))" title="Refresh records">
+          <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Refresh
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="navigate('scan')">
+          <i data-lucide="camera" style="width: 14px; height: 14px;"></i> 📷 Scan ID to Check-In
+        </button>
+      </div>
+    </div>
+    
+    <div class="data-card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; box-shadow: var(--shadow-sm);">
+      <div style="overflow-x: auto;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="background: var(--bg-subtle); border-bottom: 1px solid var(--border-color); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+              <th style="padding: 12px 16px;">Date &amp; Time</th>
+              <th style="padding: 12px 16px;">Event Name</th>
+              <th style="padding: 12px 16px;">Personnel Name</th>
+              <th style="padding: 12px 16px;">Permanent ID</th>
+              <th style="padding: 12px 16px;">Recorded By</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTableBody">
+            <tr><td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">Loading attendance records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  if (window.lucide) lucide.createIcons();
+
+  try {
+    const response = await fetch('/api/attendance/logs', { headers: getAuthHeaders() });
+    const logs = await response.json();
+
+    const tbody = document.getElementById('attendanceTableBody');
+    if (!tbody) return;
+
+    if (!Array.isArray(logs) || logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">No attendance records found yet. Scan an ID card or click Check In to record attendance.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = logs.map(log => `
+      <tr style="border-bottom: 1px solid var(--border-color); font-size: 13px;">
+        <td style="padding: 12px 16px; font-family: var(--font-data); font-size: 12px; color: var(--text-muted);">${new Date(log.check_in_time).toLocaleString()}</td>
+        <td style="padding: 12px 16px;">
+          <span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600;">
+            ${escapeHtml(log.event_name)}
+          </span>
+        </td>
+        <td style="padding: 12px 16px; font-weight: 600; color: var(--text-main);">${escapeHtml(log.full_name)}</td>
+        <td style="padding: 12px 16px; font-family: var(--font-data); font-size: 12px; font-weight: 600; color: var(--brand-primary);">${escapeHtml(log.id_number || '—')}</td>
+        <td style="padding: 12px 16px; font-size: 12px; color: var(--text-muted);">${escapeHtml(log.scanned_by_name || 'Admin')}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    const tbody = document.getElementById('attendanceTableBody');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color: #dc2626; text-align: center; padding: 24px;">Failed to load attendance data: ${escapeHtml(err.message)}</td></tr>`;
+    }
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// --- Initialize Event Listeners on Load ---
 window.addEventListener('DOMContentLoaded', initSession);
+window.addEventListener('load', handleRouting);
+window.addEventListener('popstate', handleRouting);
 window.addEventListener('hashchange', () => {
   const hash = window.location.hash.replace('#', '') || 'dashboard';
   if (state.user && state.currentRoute !== hash) {
     state.currentRoute = hash;
     render();
+  } else {
+    handleRouting();
   }
 });
+

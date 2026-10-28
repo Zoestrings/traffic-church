@@ -127,6 +127,16 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 8. Attendance Logs
+CREATE TABLE IF NOT EXISTS attendance_logs (
+    id SERIAL PRIMARY KEY,
+    organisation_id INT REFERENCES organisations(id) ON DELETE CASCADE,
+    identity_id INT NOT NULL REFERENCES identities(id) ON DELETE CASCADE,
+    event_name VARCHAR(150) NOT NULL,
+    check_in_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    scanned_by INT REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- Indexes for lightning-fast queries and tenant isolation
 CREATE INDEX IF NOT EXISTS idx_identities_org_status ON identities(organisation_id, status);
 CREATE INDEX IF NOT EXISTS idx_identities_org_search ON identities(organisation_id, full_name, id_number);
@@ -134,3 +144,5 @@ CREATE INDEX IF NOT EXISTS idx_id_cards_token ON id_cards(verification_token);
 CREATE INDEX IF NOT EXISTS idx_id_cards_identity ON id_cards(identity_id, is_current);
 CREATE INDEX IF NOT EXISTS idx_verification_events_org ON verification_events(organisation_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_org ON audit_logs(organisation_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_attendance_identity ON attendance_logs(identity_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_checkin ON attendance_logs(check_in_time DESC);

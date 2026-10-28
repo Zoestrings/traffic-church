@@ -129,6 +129,8 @@ router.get('/:token', optionalAuth, async (req, res) => {
         revocationReason: row.revocation_reason
       },
       identity: {
+        id: row.identity_id,
+        identityId: row.identity_id,
         idNumber: row.id_number,
         fullName: row.full_name,
         title: row.title,

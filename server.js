@@ -40,6 +40,7 @@ app.use('/api/verify', require('./server/routes/verify'));
 app.use('/api/organisation', require('./server/routes/organisation'));
 app.use('/api/audit', require('./server/routes/audit'));
 app.use('/api/public', require('./server/routes/public'));
+app.use('/api/attendance', require('./server/routes/attendance'));
 
 // Public Verification Page Route -> Serves client app
 app.get('/verify/:token', (req, res) => {
