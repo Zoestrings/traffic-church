@@ -15,6 +15,7 @@ async function ensureAttendanceTables() {
         organisation_id INT REFERENCES organisations(id) ON DELETE SET NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+      ALTER TABLE attendance_sessions ADD COLUMN IF NOT EXISTS organisation_id INT REFERENCES organisations(id) ON DELETE SET NULL;
       CREATE INDEX IF NOT EXISTS idx_attendance_sessions_active ON attendance_sessions(is_active);
 
       CREATE TABLE IF NOT EXISTS attendance_logs (
@@ -26,6 +27,7 @@ async function ensureAttendanceTables() {
         scanned_by INT REFERENCES users(id) ON DELETE SET NULL,
         organisation_id INT REFERENCES organisations(id) ON DELETE SET NULL
       );
+      ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS session_id INT REFERENCES attendance_sessions(id) ON DELETE SET NULL;
       CREATE INDEX IF NOT EXISTS idx_attendance_identity ON attendance_logs(identity_id);
       CREATE INDEX IF NOT EXISTS idx_attendance_checkin ON attendance_logs(check_in_time);
     `);
