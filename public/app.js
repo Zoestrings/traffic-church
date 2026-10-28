@@ -215,7 +215,22 @@ async function initSession() {
 }
 
 
+function toggleMobileSidebar(force) {
+  const sidebar = document.getElementById('appSidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if (!sidebar) return;
+  const isOpen = force !== undefined ? force : !sidebar.classList.contains('open');
+  if (isOpen) {
+    sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('active');
+  } else {
+    sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+  }
+}
+
 function navigate(route) {
+  toggleMobileSidebar(false);
   state.currentRoute = route;
   window.location.hash = route;
   // Cleanup scanner if active
@@ -343,14 +358,21 @@ function renderLoginView(container) {
 function renderAppShell(container) {
   container.innerHTML = `
     <div class="app-shell">
-      <!-- Sidebar -->
-      <aside class="sidebar">
+      <!-- Mobile Drawer Backdrop -->
+      <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="toggleMobileSidebar(false)"></div>
+
+      <!-- Sidebar (Desktop Sidebar + Mobile Drawer) -->
+      <aside class="sidebar" id="appSidebar">
         <div class="sidebar-header">
           <div class="org-badge-icon">${(state.org.name || 'AI').substring(0, 2).toUpperCase()}</div>
-          <div style="overflow: hidden;">
+          <div style="overflow: hidden; flex: 1;">
             <div class="org-title">${state.org.name || 'Apex Identity'}</div>
             <div class="org-subtitle">Prefix: ${state.org.id_prefix || 'ID'} &bull; ${state.role.replace('_', ' ').toUpperCase()}</div>
           </div>
+          <!-- Close button on Mobile Drawer -->
+          <button class="mobile-close-sidebar-btn" onclick="toggleMobileSidebar(false)" aria-label="Close menu">
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
         </div>
 
         <nav class="sidebar-nav">
@@ -359,6 +381,9 @@ function renderAppShell(container) {
           </a>
           <a class="nav-item ${state.currentRoute === 'scan' ? 'active' : ''}" onclick="navigate('scan')">
             <i data-lucide="scan-line"></i> Scan & Verify
+          </a>
+          <a class="nav-item ${state.currentRoute === 'attendance' ? 'active' : ''}" onclick="navigate('attendance')">
+            <i data-lucide="clipboard-check"></i> Attendance Register
           </a>
           <a class="nav-item ${state.currentRoute === 'directory' ? 'active' : ''}" onclick="navigate('directory')">
             <i data-lucide="users"></i> People Directory
@@ -373,9 +398,6 @@ function renderAppShell(container) {
           </a>
           <a class="nav-item ${state.currentRoute === 'enrollment' ? 'active' : ''}" onclick="navigate('enrollment')">
             <i data-lucide="qr-code"></i> Public Enrollment
-          </a>
-          <a class="nav-item ${state.currentRoute === 'attendance' ? 'active' : ''}" onclick="navigate('attendance')">
-            <i data-lucide="clipboard-check"></i> Attendance Register
           </a>
           <a class="nav-item ${state.currentRoute === 'history' ? 'active' : ''}" onclick="navigate('history')">
             <i data-lucide="history"></i> Verification Log
@@ -412,24 +434,26 @@ function renderAppShell(container) {
       <main class="main-content">
         <header class="topbar">
           <div class="topbar-left">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="display: inline-flex; width: 8px; height: 8px; border-radius: 50%; background: #2563eb;"></span>
-              <span style="font-size: 13.5px; font-weight: 700; color: #0f172a; font-family: var(--font-display);">
-                ${state.org.name || 'Grace Chapel International'}
-              </span>
+            <!-- Mobile Menu Toggle Button -->
+            <button class="mobile-menu-btn" onclick="toggleMobileSidebar(true)" aria-label="Open menu">
+              <i data-lucide="menu" style="width: 18px; height: 18px;"></i>
+            </button>
+            <div class="topbar-brand">
+              <span class="topbar-brand-dot"></span>
+              <span class="topbar-brand-title">${state.org.name || 'Grace Chapel International'}</span>
             </div>
-            <span style="color: #cbd5e1; font-weight: 300;">/</span>
-            <span style="font-size: 12px; color: #475569; font-weight: 600; text-transform: capitalize; background: #f1f5f9; padding: 2px 9px; border-radius: 6px; border: 1px solid #e2e8f0;">
-              ${state.currentRoute.replace('-', ' ')}
-            </span>
+            <span class="topbar-separator">/</span>
+            <span class="topbar-crumb">${state.currentRoute.replace('-', ' ')}</span>
           </div>
           <div class="topbar-right">
             <button class="btn btn-secondary btn-sm" onclick="navigate('scan')" style="border-color: #cbd5e1;">
-              <i data-lucide="scan" style="width: 14px; height: 14px; color: #2563eb;"></i> Quick Scan
+              <i data-lucide="scan" style="width: 14px; height: 14px; color: #2563eb;"></i>
+              <span class="btn-text">Quick Scan</span>
             </button>
             ${['super_admin', 'identity_manager'].includes(state.role) ? `
               <button class="btn btn-primary btn-sm" onclick="navigate('register')">
-                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Register Marshal
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                <span class="btn-text">Register Marshal</span>
               </button>
             ` : ''}
           </div>
@@ -439,6 +463,32 @@ function renderAppShell(container) {
           <!-- Dynamic Route Content Loaded Here -->
         </div>
       </main>
+
+      <!-- Native-feeling Mobile Bottom Tab Bar (iPhone / Android) -->
+      <nav class="mobile-bottom-nav">
+        <a class="mobile-nav-tab ${state.currentRoute === 'dashboard' ? 'active' : ''}" onclick="navigate('dashboard')">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Home</span>
+        </a>
+        <a class="mobile-nav-tab ${state.currentRoute === 'attendance' ? 'active' : ''}" onclick="navigate('attendance')">
+          <i data-lucide="clipboard-check"></i>
+          <span>Roll-Call</span>
+        </a>
+        <a class="mobile-nav-tab scan-pill ${state.currentRoute === 'scan' ? 'active' : ''}" onclick="navigate('scan')">
+          <div class="scan-bubble">
+            <i data-lucide="scan-line" style="width: 22px; height: 22px; color: #ffffff;"></i>
+          </div>
+          <span style="font-size: 9.5px; margin-top: 2px;">Scan</span>
+        </a>
+        <a class="mobile-nav-tab ${state.currentRoute === 'directory' ? 'active' : ''}" onclick="navigate('directory')">
+          <i data-lucide="users"></i>
+          <span>Members</span>
+        </a>
+        <a class="mobile-nav-tab" onclick="toggleMobileSidebar(true)">
+          <i data-lucide="menu"></i>
+          <span>Menu</span>
+        </a>
+      </nav>
     </div>
   `;
 
@@ -2854,7 +2904,7 @@ async function renderAttendanceRegisterView(container) {
     </div>
 
     <!-- SESSION CONTROLLER PANEL -->
-    <div class="card" style="margin-bottom: 24px; padding: 22px 24px; border-radius: var(--radius-lg); ${activeSession ? 'background: linear-gradient(135deg, #090e1a 0%, #0f172a 100%); border: 1px solid #1e293b; color: #ffffff; box-shadow: var(--shadow-md);' : 'background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);'}">
+    <div class="card attendance-session-card" style="margin-bottom: 24px; padding: 22px 24px; border-radius: var(--radius-lg); ${activeSession ? 'background: linear-gradient(135deg, #090e1a 0%, #0f172a 100%); border: 1px solid #1e293b; color: #ffffff; box-shadow: var(--shadow-md);' : 'background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);'}">
       ${activeSession ? `
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
           <div>
@@ -2869,7 +2919,7 @@ async function renderAttendanceRegisterView(container) {
               Started ${new Date(activeSession.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} &bull; Any badge scanned now attaches to this event automatically.
             </div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <div class="btn-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <button onclick="navigate('scan')" class="btn btn-primary" style="background: #d4af37; border-color: #d4af37; color: #090e1a; font-weight: 800; padding: 10px 18px; box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);">
               <i data-lucide="camera" style="width: 15px; height: 15px;"></i> 📷 Scan ID to Check-In
             </button>
@@ -2888,8 +2938,8 @@ async function renderAttendanceRegisterView(container) {
               Label the occasion once (e.g. Sunday Service) so all scans check in without repeated typing.
             </div>
           </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-            <input type="text" id="newSessionName" placeholder="e.g. Sunday Main Service" style="padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-size: 13px; min-width: 240px; outline: none; background: #f8fafc;" onkeydown="if(event.key === 'Enter') startAttendanceSession()" />
+          <div class="btn-group" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; max-width: 480px;">
+            <input type="text" id="newSessionName" placeholder="e.g. Sunday Main Service" style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-size: 13px; outline: none; background: #f8fafc;" onkeydown="if(event.key === 'Enter') startAttendanceSession()" />
             <button onclick="startAttendanceSession()" class="btn btn-primary" style="background: #10b981; border-color: #10b981; color: #ffffff; font-weight: 700; padding: 10px 18px;">
               Start List
             </button>
@@ -2898,17 +2948,22 @@ async function renderAttendanceRegisterView(container) {
       `}
     </div>
 
-    <!-- LIVE LOGS TABLE -->
+    <!-- LIVE LOGS TABLE / CARDS -->
     <div class="data-card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; box-shadow: var(--shadow-sm);">
       <div style="padding: 14px 18px; border-bottom: 1px solid var(--border-color); background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
-          Recorded Check-Ins Feed
-        </span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="list-checks" style="width: 16px; height: 16px; color: #2563eb;"></i>
+          <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+            Recorded Check-Ins Feed
+          </span>
+        </div>
         <span id="attendanceCountBadge" class="status-chip active" style="font-size: 11px;">
           Loading...
         </span>
       </div>
-      <div style="overflow-x: auto;">
+
+      <!-- Desktop / Tablet Table View -->
+      <div class="desktop-table-view" style="overflow-x: auto;">
         <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
             <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
@@ -2923,6 +2978,13 @@ async function renderAttendanceRegisterView(container) {
             <tr><td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">Loading attendance records...</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile Touch Feed for iPhone / Android -->
+      <div class="mobile-cards-view" id="attendanceMobileCards">
+        <div style="text-align: center; padding: 32px; color: var(--text-muted); font-size: 13px;">
+          Loading attendance records...
+        </div>
       </div>
     </div>
   `;
@@ -2980,34 +3042,67 @@ async function loadAttendanceLogs() {
     const logs = await response.json();
 
     const tbody = document.getElementById('attendanceTableBody');
+    const mobileCards = document.getElementById('attendanceMobileCards');
     const badge = document.getElementById('attendanceCountBadge');
-    if (!tbody) return;
 
     if (!Array.isArray(logs) || logs.length === 0) {
       if (badge) badge.textContent = '0 Records';
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">No attendance records found yet. Scan an ID card to record attendance.</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">No attendance records found yet. Scan an ID card to record attendance.</td></tr>';
+      if (mobileCards) mobileCards.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--text-muted); font-size: 13px;">No attendance records found yet. Tap <strong>Scan</strong> below to check in personnel.</div>';
       return;
     }
 
     if (badge) badge.textContent = `${logs.length} Recorded`;
 
-    tbody.innerHTML = logs.map(log => `
-      <tr style="border-bottom: 1px solid var(--border-color); font-size: 13px;">
-        <td style="padding: 12px 16px; font-family: var(--font-data); font-size: 12px; color: var(--text-muted);">${new Date(log.check_in_time).toLocaleString()}</td>
-        <td style="padding: 12px 16px;">
-          <span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600;">
-            ${escapeHtml(log.event_name)}
-          </span>
-        </td>
-        <td style="padding: 12px 16px; font-weight: 600; color: var(--text-main);">${escapeHtml(log.full_name)}</td>
-        <td style="padding: 12px 16px; font-family: var(--font-data); font-size: 12px; font-weight: 600; color: var(--brand-primary);">${escapeHtml(log.id_number || '—')}</td>
-        <td style="padding: 12px 16px; font-size: 12px; color: var(--text-muted);">${escapeHtml(log.scanned_by_name || 'Admin')}</td>
-      </tr>
-    `).join('');
+    // 1. Populate Desktop Table
+    if (tbody) {
+      tbody.innerHTML = logs.map(log => `
+        <tr style="border-bottom: 1px solid var(--border-color); font-size: 13px;">
+          <td style="padding: 12px 16px; font-family: var(--font-data); font-size: 12px; color: var(--text-muted);">${new Date(log.check_in_time).toLocaleString()}</td>
+          <td style="padding: 12px 16px;">
+            <span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600;">
+              ${escapeHtml(log.event_name)}
+            </span>
+          </td>
+          <td style="padding: 12px 16px; font-weight: 600; color: var(--text-main);">${escapeHtml(log.full_name)}</td>
+          <td style="padding: 12px 16px; font-family: var(--font-data); font-size: 12px; font-weight: 600; color: var(--brand-primary);">${escapeHtml(log.id_number || '—')}</td>
+          <td style="padding: 12px 16px; font-size: 12px; color: var(--text-muted);">${escapeHtml(log.scanned_by_name || 'Admin')}</td>
+        </tr>
+      `).join('');
+    }
+
+    // 2. Populate Mobile Touch Feed (iPhone & Android)
+    if (mobileCards) {
+      mobileCards.innerHTML = logs.map(log => {
+        const checkTime = new Date(log.check_in_time);
+        const timeFormatted = checkTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateFormatted = checkTime.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        return `
+          <div class="mobile-attendance-card">
+            ${renderAvatar(log.photo_url, log.full_name, 42)}
+            <div class="mobile-attendance-info">
+              <div class="mobile-attendance-name">${escapeHtml(log.full_name)}</div>
+              <div class="mobile-attendance-meta">
+                <span class="mobile-id-badge">${escapeHtml(log.id_number || 'GCI')}</span>
+                <span class="mobile-event-badge">${escapeHtml(log.event_name)}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+                <span>${dateFormatted} &bull; ${timeFormatted}</span>
+                <span style="font-size: 10px; color: #64748b;">By: ${escapeHtml(log.scanned_by_name || 'Admin')}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
   } catch (err) {
     const tbody = document.getElementById('attendanceTableBody');
+    const mobileCards = document.getElementById('attendanceMobileCards');
     if (tbody) {
       tbody.innerHTML = `<tr><td colspan="5" style="color: #dc2626; text-align: center; padding: 24px;">Failed to load attendance data: ${escapeHtml(err.message)}</td></tr>`;
+    }
+    if (mobileCards) {
+      mobileCards.innerHTML = `<div style="color: #dc2626; text-align: center; padding: 20px; font-size: 13px;">Failed to load attendance data: ${escapeHtml(err.message)}</div>`;
     }
   }
 }
