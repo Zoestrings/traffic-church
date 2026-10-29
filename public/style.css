@@ -2,8 +2,8 @@
    HELIOS COMMAND CENTRE - GLASSMORPHISM FINTECH THEME FOR GCI
    ============================================================================== */
 :root {
-  --bg-body: #05080f;
-  --bg-glass: rgba(17, 24, 39, 0.75);
+  --bg-body: #060913;
+  --bg-glass: rgba(15, 23, 42, 0.55);
   --border-glass: rgba(255, 255, 255, 0.08);
   --accent-gold: #d4af37;
   --accent-green: #10b981;
@@ -14,7 +14,7 @@
   --primary: #1a3c7a;
   --primary-hover: #132a54;
   --secondary: #64748b;
-  --card-bg: rgba(17, 24, 39, 0.75);
+  --card-bg: rgba(15, 23, 42, 0.55);
   --border-color: rgba(255, 255, 255, 0.08);
   --border-light: rgba(255, 255, 255, 0.05);
   --text-dark: #f8fafc;
@@ -28,11 +28,17 @@
 }
 
 body {
-  background-color: var(--bg-body) !important;
+  background-color: #060913 !important;
   color: var(--text-main) !important;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin: 0;
-  background-image: radial-gradient(circle at 50% 0%, rgba(17, 24, 39, 0.8) 0%, transparent 50%);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(37, 99, 235, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(212, 175, 55, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 75% 25%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+    #060913;
+  background-attachment: fixed;
 }
 
 .dashboard-layout, .app-shell {
@@ -167,23 +173,24 @@ body {
 
 /* Glassmorphism Cards */
 .glass-card, .helios-glass-card {
-  background: var(--bg-glass) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass) !important;
-  border-radius: 16px !important;
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 20px !important;
   padding: 24px !important;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.1) !important;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
 }
 
 .glass-card:hover, .helios-glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.18) !important;
+  transform: translateY(-2px);
 }
 
 .card-header, .helios-card-header {

@@ -7,11 +7,11 @@
 (function checkForVerification() {
   const path = window.location.pathname;
   const pathParts = path.split('/').filter(Boolean);
-  
+
   // Check if current URL is a QR verification route (/verify/:token or /p/:token)
   if (path.startsWith('/verify/') || path.startsWith('/p/') || (pathParts.length >= 2 && (pathParts[0] === 'verify' || pathParts[0] === 'p'))) {
     const token = pathParts[pathParts.length - 1];
-    
+
     // Set global flags so no background or deferred router redirects kick the user to login/dashboard
     window.__IS_VERIFICATION_ROUTE__ = true;
     window.__VERIFICATION_TOKEN__ = token;
@@ -239,7 +239,7 @@ function navigate(route) {
   window.location.hash = route;
   // Cleanup scanner if active
   if (state.html5QrCode && state.html5QrCode.isScanning) {
-    state.html5QrCode.stop().catch(() => {});
+    state.html5QrCode.stop().catch(() => { });
   }
   render();
 }
@@ -416,7 +416,7 @@ function renderAppShell(container) {
         <div class="sidebar-footer">
           <div class="user-profile-badge" style="cursor: pointer;" onclick="navigate('settings')">
             <div class="user-avatar" style="background: #2563eb; width: 34px; height: 34px; border-radius: 50%; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center;">
-              ${(state.user?.fullName || 'SA').split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()}
+              ${(state.user?.fullName || 'SA').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
             </div>
             <div style="overflow: hidden; max-width: 125px;">
               <div style="font-size: 12.5px; font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-display);">
@@ -464,7 +464,7 @@ function renderAppShell(container) {
             <!-- User Menu Pill -->
             <div class="topbar-user-pill" onclick="navigate('settings')">
               <div class="user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">
-                ${(state.user?.fullName || 'SA').split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()}
+                ${(state.user?.fullName || 'SA').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
               </div>
               <div class="desktop-only" style="text-align: left; line-height: 1.15; padding-right: 4px;">
                 <div style="font-size: 12px; font-weight: 700; color: #0f172a;">${state.user?.fullName || 'Super Admin'}</div>
@@ -513,7 +513,7 @@ function renderAppShell(container) {
 }
 
 async function handleLogout() {
-  await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  await api('/api/auth/logout', { method: 'POST' }).catch(() => { });
   localStorage.removeItem('auth_token');
   state.user = null;
   render();
@@ -632,18 +632,18 @@ async function loadDashboardView(container) {
     const greetingName = state.user?.full_name ? state.user.full_name.split(' ')[0] : (state.role === 'super_admin' ? 'Super Admin' : 'Admin');
 
     container.innerHTML = `
-      <div class="main-content-dashboard">
+      <div class="helios-dashboard">
         
         <!-- TOP HEADER -->
-        <header class="top-header helios-header">
+        <header class="helios-header">
           <div>
-            <h1 class="greeting helios-greeting">Welcome, ${escapeHtml(greetingName)}</h1>
-            <p class="subtitle helios-subtitle">Here is your identity operations overview.</p>
+            <h1 class="helios-greeting">Welcome, ${escapeHtml(greetingName)}</h1>
+            <p class="helios-subtitle">Here is your identity operations overview.</p>
           </div>
-          <div class="header-actions helios-header-actions">
-            <button class="btn-pill helios-pill-btn active" onclick="loadDashboardView(document.getElementById('pageContent'))">Overview</button>
-            <button class="btn-pill helios-pill-btn" onclick="navigate('history')">Operations</button>
-            <div class="search-bar helios-search">
+          <div class="helios-header-actions">
+            <button class="helios-pill-btn active" onclick="loadDashboardView(document.getElementById('pageContent'))">Overview</button>
+            <button class="helios-pill-btn" onclick="navigate('history')">Operations</button>
+            <div class="helios-search">
               <i data-lucide="search"></i>
               <input type="text" id="heliosSearchInput" placeholder="Search personnel..." oninput="handleDashboardSearchInput(event)" onkeydown="if(event.key==='Enter') searchPersonnelFromDashboard(this.value)" />
             </div>
@@ -651,19 +651,19 @@ async function loadDashboardView(container) {
         </header>
 
         <!-- 12-COLUMN GRID (Matching Helios) -->
-        <div class="dashboard-grid helios-grid">
+        <div class="helios-grid">
           
           <!-- LEFT COLUMN (span 4): Total Identities & Active Session -->
-          <div class="grid-col span-4 helios-col-4">
+          <div class="helios-col-4">
             
             <!-- Total Registered Identities Card -->
-            <div class="glass-card highlight-card helios-glass-card">
-              <div class="card-header helios-card-header">
+            <div class="helios-glass-card">
+              <div class="helios-card-header">
                 <span><i data-lucide="users" style="width: 15px; height: 15px; color: #3b82f6;"></i> Total Registered</span>
-                <span class="badge helios-badge">All Time</span>
+                <span class="helios-badge">All Time</span>
               </div>
-              <h2 class="massive-number helios-massive-number" id="statTotalIdentities">${m.totalIdentities || 0}</h2>
-              <p class="sub-text helios-subtext">${m.activeIdentities || 0} Active Personnel in Database</p>
+              <div class="helios-massive-number" id="statTotalIdentities">${m.totalIdentities || 0}</div>
+              <p class="helios-subtext">${m.activeIdentities || 0} Active Personnel in Database</p>
               <div style="display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 11.5px; color: #94a3b8;">
                 <span style="color: #10b981; font-weight: 600;">● ${m.activeCards || 0} Badges Valid</span>
                 <span>&bull;</span>
@@ -672,30 +672,30 @@ async function loadDashboardView(container) {
             </div>
 
             <!-- Active Session Controller Card -->
-            <div class="glass-card action-card helios-glass-card" style="margin-top: 0; background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(17, 24, 39, 0.85) 100%) !important; border: 1px solid rgba(16, 185, 129, 0.35) !important;">
-              <div class="card-header helios-card-header">
+            <div class="helios-glass-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%) !important; border: 1px solid rgba(16, 185, 129, 0.35) !important; box-shadow: 0 12px 32px 0 rgba(16, 185, 129, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.1) !important;">
+              <div class="helios-card-header">
                 <span><i data-lucide="calendar" style="width: 15px; height: 15px; color: #10b981;"></i> Attendance Session</span>
-                <span class="badge helios-badge" style="background: ${activeSession ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.08)'}; color: ${activeSession ? '#10b981' : '#94a3b8'};">
+                <span class="helios-badge" style="background: ${activeSession ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)'}; color: ${activeSession ? '#10b981' : '#94a3b8'}; border: 1px solid ${activeSession ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)'};">
                   ${activeSession ? '● Active' : 'Idle'}
                 </span>
               </div>
-              <h3 id="activeSessionName" style="font-size: 18px; font-weight: 800; color: ${activeSession ? '#10b981' : '#f8fafc'}; margin: 0 0 6px 0; font-family: var(--font-display); line-height: 1.3;">
+              <div id="activeSessionName" style="font-size: 18px; font-weight: 800; color: ${activeSession ? '#10b981' : '#f8fafc'}; margin-bottom: 6px; font-family: var(--font-display); line-height: 1.3;">
                 ${activeSession ? escapeHtml(activeSession.event_name) : 'No Active Event'}
-              </h3>
-              <p class="sub-text helios-subtext" style="margin-bottom: 16px;">
+              </div>
+              <p class="helios-subtext" style="margin-bottom: 16px; color: #94a3b8;">
                 ${activeSession ? 'Scans automatically record check-ins to this event.' : 'Start a session to begin logging live check-ins.'}
               </p>
               <div style="display: flex; gap: 8px;">
                 ${activeSession ? `
-                  <button class="btn btn-sm btn-secondary" onclick="promptEndAttendanceSession()" style="flex: 1; border-color: rgba(244, 63, 94, 0.4); color: #f43f5e; background: rgba(244, 63, 94, 0.1);">
+                  <button class="btn btn-sm btn-secondary" onclick="promptEndAttendanceSession()" style="flex: 1; border-color: rgba(244, 63, 94, 0.4); color: #f43f5e; background: rgba(244, 63, 94, 0.12);">
                     <i data-lucide="square" style="width: 13px; height: 13px;"></i> End List
                   </button>
-                  <button class="btn btn-sm btn-primary" onclick="navigate('attendance')" style="flex: 1; background: #10b981 !important; border-color: #10b981 !important;">
+                  <button class="btn btn-sm btn-primary" onclick="navigate('attendance')" style="flex: 1; background: #10b981; border-color: #10b981; color: #ffffff; font-weight: 600;">
                     <i data-lucide="clipboard-check" style="width: 13px; height: 13px;"></i> Register &gt;
                   </button>
                 ` : `
-                  <button class="btn-primary full-width" onclick="promptStartAttendanceSession()" style="background: #10b981 !important; border-color: #10b981 !important; padding: 11px 16px;">
-                    <i data-lucide="play" style="width: 13px; height: 13px; vertical-align: middle; margin-right: 4px;"></i> Start New Session
+                  <button class="btn btn-sm btn-primary" onclick="promptStartAttendanceSession()" style="width: 100%; background: #10b981; border-color: #10b981; color: #ffffff; padding: 10px 16px; font-weight: 700; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);">
+                    <i data-lucide="play" style="width: 13px; height: 13px;"></i> Start New Session
                   </button>
                 `}
               </div>
@@ -704,39 +704,39 @@ async function loadDashboardView(container) {
           </div>
 
           <!-- MIDDLE COLUMN (span 4): Live Verification Feed -->
-          <div class="grid-col span-4 helios-col-4">
-            <div class="glass-card helios-glass-card" style="height: 100%;">
-              <div class="card-header helios-card-header">
+          <div class="helios-col-4">
+            <div class="helios-glass-card" style="height: 100%;">
+              <div class="helios-card-header">
                 <span><i data-lucide="radio" style="width: 15px; height: 15px; color: #3b82f6;"></i> Live Verification Feed</span>
-                <a onclick="navigate('history')" class="link-text" style="color: #60a5fa; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;">See all &rarr;</a>
+                <a onclick="navigate('history')" style="color: #60a5fa; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;">See all &rarr;</a>
               </div>
-              <ul class="feed-list helios-feed-list" id="liveVerificationFeed">
+              <ul class="helios-feed-list" id="heliosLiveFeed">
                 ${recentVerifs.length > 0 ? recentVerifs.slice(0, 5).map(v => {
-                  const name = v.person_name || 'Unrecognized ID';
-                  const idNum = v.id_number || 'SCAN';
-                  const outcome = (v.outcome || 'VERIFIED').toUpperCase();
-                  const timeStr = v.created_at ? formatRelativeTime(v.created_at) : 'Just now';
-                  const isVerified = outcome === 'VERIFIED';
-                  const isRevoked = outcome === 'REVOKED' || outcome === 'INVALID';
-                  const badgeBg = isVerified ? 'rgba(16, 185, 129, 0.2)' : (isRevoked ? 'rgba(244, 63, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)');
-                  const badgeColor = isVerified ? '#10b981' : (isRevoked ? '#f43f5e' : '#f59e0b');
+      const name = v.person_name || 'Unrecognized ID';
+      const idNum = v.id_number || 'SCAN';
+      const outcome = (v.outcome || 'VERIFIED').toUpperCase();
+      const timeStr = v.created_at ? formatRelativeTime(v.created_at) : 'Just now';
+      const isVerified = outcome === 'VERIFIED';
+      const isRevoked = outcome === 'REVOKED' || outcome === 'INVALID';
+      const badgeBg = isVerified ? 'rgba(16, 185, 129, 0.2)' : (isRevoked ? 'rgba(244, 63, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)');
+      const badgeColor = isVerified ? '#10b981' : (isRevoked ? '#f43f5e' : '#f59e0b');
 
-                  return `
-                    <li class="feed-item helios-feed-item">
+      return `
+                    <li class="helios-feed-item">
                       <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; padding-right: 8px;">
                         <div style="width: 8px; height: 8px; border-radius: 50%; background: ${badgeColor}; flex-shrink: 0;"></div>
                         <div style="overflow: hidden;">
-                          <div class="feed-item-name helios-feed-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(name)}</div>
-                          <div class="feed-item-meta helios-feed-meta">${escapeHtml(idNum)} &bull; ${timeStr}</div>
+                          <div class="helios-feed-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(name)}</div>
+                          <div class="helios-feed-meta">${escapeHtml(idNum)} &bull; ${timeStr}</div>
                         </div>
                       </div>
-                      <span class="badge helios-badge" style="background: ${badgeBg}; color: ${badgeColor}; flex-shrink: 0;">
+                      <span class="helios-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBg}; flex-shrink: 0;">
                         ${outcome}
                       </span>
                     </li>
                   `;
-                }).join('') : `
-                  <li class="feed-item helios-feed-item" style="justify-content: center; color: var(--text-muted); font-size: 12.5px; padding: 24px 12px;">
+    }).join('') : `
+                  <li class="helios-feed-item" style="justify-content: center; color: #94a3b8; font-size: 12.5px; padding: 24px 12px;">
                     No verification scans recorded yet.
                   </li>
                 `}
@@ -745,26 +745,26 @@ async function loadDashboardView(container) {
           </div>
 
           <!-- RIGHT COLUMN (span 4): Recent Registrations -->
-          <div class="grid-col span-4 helios-col-4">
-            <div class="glass-card helios-glass-card" style="height: 100%;">
-              <div class="card-header helios-card-header">
+          <div class="helios-col-4">
+            <div class="helios-glass-card" style="height: 100%;">
+              <div class="helios-card-header">
                 <span><i data-lucide="user-check" style="width: 15px; height: 15px; color: #3b82f6;"></i> Recent Registrations</span>
-                <a onclick="navigate('directory')" class="link-text" style="color: #60a5fa; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;">See all &rarr;</a>
+                <a onclick="navigate('directory')" style="color: #60a5fa; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;">See all &rarr;</a>
               </div>
-              <div class="mini-card-grid helios-mini-grid" id="recentRegistrations">
+              <div class="helios-mini-grid" id="heliosRecentPeople">
                 ${recentPeople.length > 0 ? recentPeople.slice(0, 4).map(p => `
-                  <div class="mini-card helios-mini-card" onclick="openPersonInDirectory('${escapeHtml(p.id_number)}')">
+                  <div class="helios-mini-card" onclick="openPersonInDirectory('${escapeHtml(p.id_number)}')">
                     <div style="display: flex; align-items: center; gap: 8px;">
                       ${renderAvatar(p.photo_url, p.full_name, 28)}
                       <div style="overflow: hidden;">
-                        <div class="mini-card-title helios-mini-title">${escapeHtml(p.full_name ? p.full_name.split(' ')[0] : 'Marshal')}</div>
-                        <div style="font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(p.position || p.department || 'Marshal')}</div>
+                        <div class="helios-mini-title">${escapeHtml(p.full_name ? p.full_name.split(' ')[0] : 'Marshal')}</div>
+                        <div class="helios-mini-dept">${escapeHtml(p.position || p.department || 'Marshal')}</div>
                       </div>
                     </div>
-                    <div class="mini-card-meta helios-mini-meta">${escapeHtml(p.id_number)}</div>
+                    <div class="helios-mini-meta">${escapeHtml(p.id_number)}</div>
                   </div>
                 `).join('') : `
-                  <div style="grid-column: span 2; text-align: center; color: var(--text-muted); font-size: 12.5px; padding: 24px 12px;">
+                  <div style="grid-column: span 2; text-align: center; color: #94a3b8; font-size: 12.5px; padding: 24px 12px;">
                     No registered personnel found.
                   </div>
                 `}
@@ -773,23 +773,23 @@ async function loadDashboardView(container) {
           </div>
 
           <!-- BOTTOM WIDE SECTION (span 12): Verification Volume Chart -->
-          <div class="grid-col span-12 helios-col-12">
-            <div class="glass-card chart-card helios-glass-card">
-              <div class="card-header helios-card-header" style="margin-bottom: 8px;">
+          <div class="helios-col-12">
+            <div class="helios-glass-card">
+              <div class="helios-chart-header-row">
                 <div>
-                  <span style="display: flex; align-items: center; gap: 8px; color: var(--text-main); font-size: 14px; font-weight: 700;">
+                  <div style="font-weight: 700; color: #f8fafc; font-size: 14px; font-family: var(--font-display); display: flex; align-items: center; gap: 8px;">
                     <i data-lucide="trending-up" style="width: 16px; height: 16px; color: #3b82f6;"></i>
                     Verification Volume (Last 7 Days)
-                  </span>
-                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Daily scan throughput and security authentications</div>
+                  </div>
+                  <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Daily scan throughput and security authentications</div>
                 </div>
-                <div class="time-filters">
-                  <button onclick="setVolumeFilter(this, '1d')">1D</button>
-                  <button class="active" onclick="setVolumeFilter(this, '7d')">1W</button>
-                  <button onclick="setVolumeFilter(this, '30d')">1M</button>
+                <div class="helios-time-tabs">
+                  <button class="helios-time-tab" onclick="setVolumeFilter(this, '1d')">1D</button>
+                  <button class="helios-time-tab active" onclick="setVolumeFilter(this, '7d')">1W</button>
+                  <button class="helios-time-tab" onclick="setVolumeFilter(this, '30d')">1M</button>
                 </div>
               </div>
-              <div class="chart-container helios-chart-container" id="heliosVolumeChart">
+              <div class="helios-chart-container" id="heliosVolumeChart">
                 ${renderVolumeChartSvg(dailyVolume)}
               </div>
             </div>
@@ -815,14 +815,14 @@ function renderVolumeChartSvg(volumeData) {
   const data = Array.isArray(volumeData) && volumeData.length > 0
     ? volumeData
     : [
-        { label: 'Day 1', count: 0, verified_count: 0 },
-        { label: 'Day 2', count: 0, verified_count: 0 },
-        { label: 'Day 3', count: 0, verified_count: 0 },
-        { label: 'Day 4', count: 0, verified_count: 0 },
-        { label: 'Day 5', count: 0, verified_count: 0 },
-        { label: 'Day 6', count: 0, verified_count: 0 },
-        { label: 'Today', count: 0, verified_count: 0 }
-      ];
+      { label: 'Day 1', count: 0, verified_count: 0 },
+      { label: 'Day 2', count: 0, verified_count: 0 },
+      { label: 'Day 3', count: 0, verified_count: 0 },
+      { label: 'Day 4', count: 0, verified_count: 0 },
+      { label: 'Day 5', count: 0, verified_count: 0 },
+      { label: 'Day 6', count: 0, verified_count: 0 },
+      { label: 'Today', count: 0, verified_count: 0 }
+    ];
 
   const maxVal = Math.max(...data.map(d => Number(d.count) || 0), 5);
   const totalVolume = data.reduce((acc, d) => acc + (Number(d.count) || 0), 0);
@@ -848,8 +848,8 @@ function renderVolumeChartSvg(volumeData) {
   return `
     <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
       <div style="display: flex; gap: 16px; align-items: baseline;">
-        <span style="font-size: 26px; font-weight: 800; color: #ffffff; font-family: var(--font-display);">${totalVolume}</span>
-        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Total 7-day scans &bull; <strong style="color: #10b981;">${totalVerified} Verified</strong></span>
+        <span style="font-size: 26px; font-weight: 800; color: #f8fafc; font-family: var(--font-display);">${totalVolume}</span>
+        <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Total 7-day scans &bull; <strong style="color: #10b981;">${totalVerified} Verified</strong></span>
       </div>
       <div style="font-size: 11.5px; color: #64748b; font-family: var(--font-data);">Auto-synchronized live telemetry</div>
     </div>
@@ -857,7 +857,7 @@ function renderVolumeChartSvg(volumeData) {
       <svg viewBox="0 0 ${width} ${height}" style="width: 100%; min-width: 500px; height: auto; display: block; overflow: visible;">
         <defs>
           <linearGradient id="heliosAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.30" />
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.32" />
             <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0" />
           </linearGradient>
         </defs>
@@ -876,7 +876,7 @@ function renderVolumeChartSvg(volumeData) {
         <!-- Points & Labels -->
         ${points.map(p => `
           <g class="chart-point-group" style="cursor: pointer;">
-            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#05080f" stroke="#3b82f6" stroke-width="2.5" />
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#060913" stroke="#3b82f6" stroke-width="2.5" />
             <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="12" fill="transparent">
               <title>${p.label}: ${p.count} scans (${p.verified} verified)</title>
             </circle>
@@ -1096,14 +1096,14 @@ function loadScannerView(container) {
   const manualBtn = document.getElementById('manualVerifyBtn');
 
   startBtn.addEventListener('click', () => startCameraScanner());
-  stopBtn.addEventListener('click',  () => stopCameraScanner());
+  stopBtn.addEventListener('click', () => stopCameraScanner());
 
   manualBtn.addEventListener('click', () => {
     const val = document.getElementById('manualTokenInput').value.trim();
     if (val) {
       const token = val.includes('/verify/') ? val.split('/verify/')[1].split('/')[0]
-                  : val.includes('/p/')      ? val.split('/p/')[1].split('/')[0]
-                  : val;
+        : val.includes('/p/') ? val.split('/p/')[1].split('/')[0]
+          : val;
       verifyToken(token);
     }
   });
@@ -1122,8 +1122,8 @@ function loadScannerView(container) {
       const tempReader = new Html5Qrcode('qrReader');
       const decodedText = await tempReader.scanFile(file, false);
       const token = decodedText.includes('/verify/') ? decodedText.split('/verify/')[1].split('?')[0].split('#')[0]
-                  : decodedText.includes('/p/')      ? decodedText.split('/p/')[1].split('?')[0].split('#')[0]
-                  : decodedText;
+        : decodedText.includes('/p/') ? decodedText.split('/p/')[1].split('?')[0].split('#')[0]
+          : decodedText;
       setScannerStatus('LIVE', 'QR code decoded — verifying credential...');
       verifyToken(token);
     } catch (err) {
@@ -1146,12 +1146,12 @@ function setScannerStatus(status, msg) {
   const badge = document.getElementById('cam-status');
   const msgEl = document.getElementById('scanner-msg');
   const styles = {
-    STANDBY:      { bg: '#1e293b', color: '#94a3b8' },
+    STANDBY: { bg: '#1e293b', color: '#94a3b8' },
     INITIALIZING: { bg: '#1e3a8a', color: '#93c5fd' },
-    LIVE:         { bg: '#065f46', color: '#6ee7b7' },
-    DECODING:     { bg: '#713f12', color: '#fde68a' },
-    STOPPED:      { bg: '#1e293b', color: '#94a3b8' },
-    FAILED:       { bg: '#7f1d1d', color: '#fca5a5' },
+    LIVE: { bg: '#065f46', color: '#6ee7b7' },
+    DECODING: { bg: '#713f12', color: '#fde68a' },
+    STOPPED: { bg: '#1e293b', color: '#94a3b8' },
+    FAILED: { bg: '#7f1d1d', color: '#fca5a5' },
   };
   if (badge) {
     const s = styles[status] || styles.STANDBY;
@@ -1164,8 +1164,8 @@ function setScannerStatus(status, msg) {
 
 async function startCameraScanner() {
   const readerDiv = document.getElementById('qrReader');
-  const startBtn  = document.getElementById('startScanBtn');
-  const stopBtn   = document.getElementById('stopScanBtn');
+  const startBtn = document.getElementById('startScanBtn');
+  const stopBtn = document.getElementById('stopScanBtn');
 
   setScannerStatus('INITIALIZING', 'Requesting camera access...');
 
@@ -1173,7 +1173,7 @@ async function startCameraScanner() {
   await stopCameraScanner(true /* silent */);
 
   if (startBtn) startBtn.style.display = 'none';
-  if (stopBtn)  stopBtn.style.display  = 'inline-flex';
+  if (stopBtn) stopBtn.style.display = 'inline-flex';
 
   const config = {
     fps: 10,
@@ -1263,9 +1263,9 @@ async function stopCameraScanner() {
   } finally {
     state.html5QrCode = null;
     const startBtn = document.getElementById('startScanBtn');
-    const stopBtn  = document.getElementById('stopScanBtn');
+    const stopBtn = document.getElementById('stopScanBtn');
     if (startBtn) startBtn.style.display = 'inline-flex';
-    if (stopBtn)  stopBtn.style.display  = 'none';
+    if (stopBtn) stopBtn.style.display = 'none';
   }
 }
 
@@ -1308,7 +1308,7 @@ async function renderVerificationProfileCard(container, data) {
   try {
     const sRes = await fetch('/api/attendance/sessions/active', { headers: getAuthHeaders() });
     if (sRes.ok) activeSession = await sRes.json();
-  } catch (e) {}
+  } catch (e) { }
 
   container.innerHTML = `
     <div class="verification-result-card">
@@ -1810,8 +1810,8 @@ async function reissueCard(personId) {
 // --- REUSABLE CR80 PHYSICAL & DIGITAL ID CARD GENERATOR ---
 function renderCR80CardHtml(p, currentCard, orgName = 'Grace Chapel International') {
   const token = currentCard.verification_token || currentCard.verificationToken;
-  const qrUrl = token 
-    ? `/api/cards/token/${token}/qr` 
+  const qrUrl = token
+    ? `/api/cards/token/${token}/qr`
     : (currentCard.id ? `/api/cards/${currentCard.id}/qr` : '/api/cards/1/qr');
 
   const issueDateStr = currentCard.issue_date || currentCard.issueDate;
@@ -2817,7 +2817,7 @@ async function renderPublicVerifyView(container, explicitToken) {
     if (!res.ok) {
       throw new Error(data.message || data.error || `Verification failed (HTTP ${res.status})`);
     }
-    
+
     // Normalize outcome & payload across schema versions (data-mapping point 1 & 2)
     const outcome = (data.outcome || data.status || 'invalid').toLowerCase();
     const isVerified = outcome === 'verified';
@@ -2851,8 +2851,8 @@ async function renderPublicVerifyView(container, explicitToken) {
       overlay.classList.add('fade-out');
       profileContainer.style.opacity = '1';
       profileContainer.style.transition = 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-      setTimeout(() => { 
-        if (overlay) overlay.style.display = 'none'; 
+      setTimeout(() => {
+        if (overlay) overlay.style.display = 'none';
       }, 600);
     }, 1500);
 
@@ -3016,9 +3016,9 @@ async function renderProfilePage(container, data) {
 // --- Attendance Actions ---
 async function logAttendance(identityId, explicitEventName) {
   const msgEl = document.getElementById('attendanceMsg');
-  const btn = document.getElementById(`btnCheckIn_${identityId}`) || 
-              document.querySelector(`button[onclick*="logAttendance('${identityId}'"]`);
-  
+  const btn = document.getElementById(`btnCheckIn_${identityId}`) ||
+    document.querySelector(`button[onclick*="logAttendance('${identityId}'"]`);
+
   if (btn) {
     btn.disabled = true;
     btn.innerText = 'Recording attendance...';
@@ -3094,7 +3094,7 @@ async function renderAttendanceRegisterView(container) {
     // No active session
   }
 
-  const sessionStartTime = activeSession 
+  const sessionStartTime = activeSession
     ? new Date(activeSession.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '10:50 PM';
 
@@ -3467,7 +3467,7 @@ async function loadAttendanceLogs() {
         const d = new Date(log.check_in_time);
         const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const initials = (log.full_name || 'SA').split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+        const initials = (log.full_name || 'SA').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         const avatarBgs = ['#2563eb', '#059669', '#7c3aed', '#ea580c', '#0284c7'];
         const bg = avatarBgs[idx % avatarBgs.length];
         const isPending = log.status === 'pending';
@@ -3526,7 +3526,7 @@ async function loadAttendanceLogs() {
         const d = new Date(log.check_in_time);
         const timeFormatted = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const dateFormatted = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-        const initials = (log.full_name || 'SA').split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+        const initials = (log.full_name || 'SA').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         const avatarBgs = ['#2563eb', '#059669', '#7c3aed', '#ea580c', '#0284c7'];
         const bg = avatarBgs[idx % avatarBgs.length];
 
@@ -3554,19 +3554,19 @@ async function loadAttendanceLogs() {
 
     // 3. Populate Recent Activity Stream in Right Side Card
     if (sideActivity) {
-      const recentItems = hasRealLogs 
+      const recentItems = hasRealLogs
         ? logs.slice(0, 5).map(l => ({
-            name: l.full_name,
-            text: `Checked in - ${l.event_name}`,
-            time: new Date(l.check_in_time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-            status: 'verified'
-          }))
+          name: l.full_name,
+          text: `Checked in - ${l.event_name}`,
+          time: new Date(l.check_in_time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          status: 'verified'
+        }))
         : [
-            { name: 'Samuel Adeleke', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 09:05 PM', status: 'verified' },
-            { name: 'Oluwaseun Ajayi', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 09:04 PM', status: 'verified' },
-            { name: 'Ibrahim Bello', text: 'Check-in pending - Sunday Service', time: 'Apr 29, 2026 &bull; 08:46 PM', status: 'pending' },
-            { name: 'Fatima Aliyu', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 08:42 PM', status: 'verified' }
-          ];
+          { name: 'Samuel Adeleke', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 09:05 PM', status: 'verified' },
+          { name: 'Oluwaseun Ajayi', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 09:04 PM', status: 'verified' },
+          { name: 'Ibrahim Bello', text: 'Check-in pending - Sunday Service', time: 'Apr 29, 2026 &bull; 08:46 PM', status: 'pending' },
+          { name: 'Fatima Aliyu', text: 'Checked in - Sunday Service', time: 'Apr 29, 2026 &bull; 08:42 PM', status: 'verified' }
+        ];
 
       sideActivity.innerHTML = recentItems.map(item => `
         <div class="recent-timeline-item">
