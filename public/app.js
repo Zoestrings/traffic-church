@@ -557,233 +557,195 @@ function renderCurrentRoute() {
   }
 }
 
-// --- 3. DASHBOARD VIEW ---
+// --- 3. DASHBOARD VIEW (HELIOS COMMAND CENTRE ADAPTATION) ---
 async function loadDashboardView(container) {
   container.innerHTML = `
-    <div class="page-header">
-      <div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-          <h1 class="page-title">Operations Command & ID Fleet</h1>
-          <span class="live-pulse-badge">
-            <span class="pulse-dot"></span> Live Fleet Synchronized
-          </span>
-        </div>
-        <div class="page-description">
-          ${state.org?.name || 'Grace Chapel International'} &bull; Traffic Safety & Identity Verification Directorate
-        </div>
-      </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <button class="btn btn-secondary btn-sm" onclick="loadDashboardView(document.getElementById('pageContent'))" title="Refresh Live Data">
-          <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Refresh
-        </button>
-        ${['super_admin', 'identity_manager'].includes(state.role) ? `
-          <button class="btn btn-accent btn-sm" onclick="navigate('register')">
-            <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Register Marshal
-          </button>
-        ` : ''}
-        <button class="btn btn-primary btn-sm" onclick="navigate('scan')">
-          <i data-lucide="scan" style="width: 14px; height: 14px;"></i> Scan Terminal
-        </button>
-      </div>
-    </div>
-
     <div id="dashboardLoader" style="padding: 60px 20px; text-align: center; color: var(--text-muted); font-family: var(--font-display);">
       <div style="display: inline-block; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;"></div>
       <div style="font-size: 13px; font-weight: 500;">Connecting to cloud identity telemetry...</div>
     </div>
   `;
-  lucide.createIcons();
 
   try {
     const data = await api('/api/dashboard/stats');
     state.stats = data;
 
-    const m = data.metrics;
+    const m = data.metrics || {};
+    const activeSession = data.activeSession || null;
+    const recentVerifs = data.recentVerifications || [];
+    const recentPeople = data.recentPeople || [];
+    const dailyVolume = data.dailyVolume || [];
+
+    const greetingName = state.user?.full_name ? state.user.full_name.split(' ')[0] : (state.role === 'super_admin' ? 'Super Admin' : 'Admin');
+
     container.innerHTML = `
-      <div class="page-header">
-        <div>
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-            <h1 class="page-title">Operations Command & ID Fleet</h1>
-            <span class="live-pulse-badge">
-              <span class="pulse-dot"></span> Live Fleet Synchronized
-            </span>
+      <div class="helios-dashboard">
+        
+        <!-- TOP HEADER -->
+        <header class="helios-header">
+          <div>
+            <h1 class="helios-greeting">Welcome, ${escapeHtml(greetingName)}</h1>
+            <p class="helios-subtitle">Here is your identity operations overview.</p>
           </div>
-          <div class="page-description">
-            ${state.org?.name || 'Grace Chapel International'} &bull; Traffic Safety & Biometric Verification Directorate
-          </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-secondary btn-sm" onclick="loadDashboardView(document.getElementById('pageContent'))">
-            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Sync
-          </button>
-          ${['super_admin', 'identity_manager'].includes(state.role) ? `
-            <button class="btn btn-accent btn-sm" onclick="navigate('register')">
-              <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Register Marshal
-            </button>
-          ` : ''}
-          <button class="btn btn-primary btn-sm" onclick="navigate('scan')">
-            <i data-lucide="scan" style="width: 14px; height: 14px;"></i> Scan Terminal
-          </button>
-        </div>
-      </div>
-
-      <!-- Sculpted Floating Metric Grid -->
-      <div class="stat-grid">
-        <!-- Total Registered Personnel -->
-        <div class="stat-card">
-          <div class="stat-card-top">
-            <div class="stat-label">Total Registered Marshals</div>
-            <div class="stat-icon-pill blue">
-              <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+          <div class="helios-header-actions">
+            <button class="helios-pill-btn active" onclick="loadDashboardView(document.getElementById('pageContent'))">Overview</button>
+            <button class="helios-pill-btn" onclick="navigate('history')">Operations</button>
+            <div class="helios-search">
+              <i data-lucide="search"></i>
+              <input type="text" id="heliosSearchInput" placeholder="Search personnel..." onkeydown="if(event.key==='Enter') searchPersonnelFromDashboard(this.value)" />
             </div>
           </div>
-          <div class="stat-value">${m.totalIdentities}</div>
-          <div class="stat-sub">
-            <span style="color: #059669; font-weight: 700;">● ${m.activeIdentities} Active</span>
-            <span style="color: #cbd5e1;">&bull;</span>
-            <span>${m.suspendedIdentities} Suspended</span>
-          </div>
-        </div>
+        </header>
 
-        <!-- Active Field Credentials -->
-        <div class="stat-card">
-          <div class="stat-card-top">
-            <div class="stat-label">Active Field Badges</div>
-            <div class="stat-icon-pill emerald">
-              <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+        <!-- 12-COLUMN GRID (Matching Helios) -->
+        <div class="helios-grid">
+          
+          <!-- LEFT COLUMN (span 4): Total Identities & Active Session -->
+          <div class="helios-col-4">
+            
+            <!-- Total Registered Identities Card -->
+            <div class="helios-glass-card">
+              <div class="helios-card-header">
+                <span><i data-lucide="users" style="width: 15px; height: 15px; color: #2563eb;"></i> Total Registered</span>
+                <span class="helios-badge">All Time</span>
+              </div>
+              <div class="helios-massive-number" id="statTotalIdentities">${m.totalIdentities || 0}</div>
+              <p class="helios-subtext">${m.activeIdentities || 0} Active Personnel in Database</p>
+              <div style="display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-subtle); font-size: 11.5px; color: #64748b;">
+                <span style="color: #059669; font-weight: 600;">● ${m.activeCards || 0} Badges Valid</span>
+                <span>&bull;</span>
+                <span style="color: ${m.revokedCards > 0 ? '#e11d48' : '#64748b'}; font-weight: 600;">${m.revokedCards || 0} Revoked</span>
+              </div>
             </div>
-          </div>
-          <div class="stat-value" style="color: #059669;">${m.activeCards}</div>
-          <div class="stat-sub">
-            <span class="status-chip active" style="font-size: 11px; padding: 2px 8px;">
-              <span class="chip-dot"></span> Valid In Field
-            </span>
-          </div>
-        </div>
 
-        <!-- Revoked / Voided Badges -->
-        <div class="stat-card">
-          <div class="stat-card-top">
-            <div class="stat-label">Security Revocations</div>
-            <div class="stat-icon-pill rose">
-              <i data-lucide="shield-alert" style="width: 18px; height: 18px;"></i>
+            <!-- Active Session Controller Card -->
+            <div class="helios-glass-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(255, 255, 255, 0.98) 100%); border: 1px solid rgba(16, 185, 129, 0.35);">
+              <div class="helios-card-header">
+                <span><i data-lucide="calendar" style="width: 15px; height: 15px; color: #059669;"></i> Attendance Session</span>
+                <span class="helios-badge" style="background: ${activeSession ? 'rgba(16, 185, 129, 0.15)' : '#f1f5f9'}; color: ${activeSession ? '#059669' : '#64748b'};">
+                  ${activeSession ? '● Active' : 'Idle'}
+                </span>
+              </div>
+              <div id="activeSessionName" style="font-size: 18px; font-weight: 800; color: ${activeSession ? '#059669' : '#0f172a'}; margin-bottom: 6px; font-family: var(--font-display); line-height: 1.3;">
+                ${activeSession ? escapeHtml(activeSession.event_name) : 'No Active Event'}
+              </div>
+              <p class="helios-subtext" style="margin-bottom: 16px;">
+                ${activeSession ? 'Scans automatically record check-ins to this event.' : 'Start a session to begin logging live check-ins.'}
+              </p>
+              <div style="display: flex; gap: 8px;">
+                ${activeSession ? `
+                  <button class="btn btn-sm btn-secondary" onclick="promptEndAttendanceSession()" style="flex: 1; border-color: #fca5a5; color: #dc2626;">
+                    <i data-lucide="square" style="width: 13px; height: 13px;"></i> End List
+                  </button>
+                  <button class="btn btn-sm btn-primary" onclick="navigate('attendance')" style="flex: 1; background: #059669; border-color: #059669;">
+                    <i data-lucide="clipboard-check" style="width: 13px; height: 13px;"></i> Register &gt;
+                  </button>
+                ` : `
+                  <button class="btn btn-sm btn-primary" onclick="promptStartAttendanceSession()" style="width: 100%; background: #059669; border-color: #059669; padding: 10px 16px; font-weight: 700;">
+                    <i data-lucide="play" style="width: 13px; height: 13px;"></i> Start New Session
+                  </button>
+                `}
+              </div>
             </div>
-          </div>
-          <div class="stat-value" style="color: #e11d48;">${m.revokedCards}</div>
-          <div class="stat-sub">
-            <span style="color: #e11d48; font-weight: 600;">
-              ${m.revokedCards > 0 ? `${m.revokedCards} Badges Voided / Cancelled` : 'Zero Revocation Flags'}
-            </span>
-          </div>
-        </div>
 
-        <!-- 30-Day Verifications -->
-        <div class="stat-card">
-          <div class="stat-card-top">
-            <div class="stat-label">30-Day Verifications</div>
-            <div class="stat-icon-pill purple">
-              <i data-lucide="activity" style="width: 18px; height: 18px;"></i>
-            </div>
           </div>
-          <div class="stat-value">${m.totalScans30Days}</div>
-          <div class="stat-sub">
-            <span style="color: #059669; font-weight: 700;">${m.verifiedScans30Days} Valid</span>
-            <span style="color: #cbd5e1;">&bull;</span>
-            <span style="color: #e11d48; font-weight: 700;">${m.revokedScans30Days} Rejected</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Unified Dual Command Console Grid -->
-      <div class="command-console-panel">
-        <!-- Recently Registered Personnel -->
-        <div class="console-panel-left">
-          <div class="panel-heading">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i data-lucide="id-card" style="width: 18px; height: 18px; color: #2563eb;"></i>
-              <span>Recently Registered Personnel</span>
-            </div>
-            <a onclick="navigate('directory')" style="font-size: 12px; font-weight: 600; color: #2563eb; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 4px;">
-              Full Directory &rarr;
-            </a>
-          </div>
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Personnel & Rank</th>
-                  <th>ID Number</th>
-                  <th>Branch & Dept</th>
-                  <th>Credential</th>
-                  <th style="text-align: right;">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${data.recentPeople.length > 0 ? data.recentPeople.map(p => `
-                  <tr>
-                    <td>
-                      <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="avatar-wrapper">
-                          ${renderAvatar(p.photo_url, p.full_name, 36)}
-                        </div>
-                        <div>
-                          <div style="font-weight: 700; color: #0f172a; font-size: 13px; font-family: var(--font-display);">
-                            ${p.title ? p.title + ' ' : ''}${p.full_name}
-                          </div>
-                          <div style="display: inline-block; font-size: 10px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 2px 7px; border-radius: 4px; margin-top: 3px; border: 1px solid #dbeafe;">
-                            ${p.position || 'Staff Marshal'}
-                          </div>
+          <!-- MIDDLE COLUMN (span 4): Live Verification Feed -->
+          <div class="helios-col-4">
+            <div class="helios-glass-card" style="height: 100%;">
+              <div class="helios-card-header">
+                <span><i data-lucide="radio" style="width: 15px; height: 15px; color: #2563eb;"></i> Live Verification Feed</span>
+                <a onclick="navigate('history')" style="color: #2563eb; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;">See all &rarr;</a>
+              </div>
+              <ul class="helios-feed-list" id="heliosLiveFeed">
+                ${recentVerifs.length > 0 ? recentVerifs.slice(0, 5).map(v => {
+                  const name = v.person_name || 'Unrecognized ID';
+                  const idNum = v.id_number || 'SCAN';
+                  const outcome = (v.outcome || 'VERIFIED').toUpperCase();
+                  const timeStr = v.created_at ? formatRelativeTime(v.created_at) : 'Just now';
+                  const isVerified = outcome === 'VERIFIED';
+                  const isRevoked = outcome === 'REVOKED' || outcome === 'INVALID';
+                  const badgeBg = isVerified ? 'rgba(16, 185, 129, 0.12)' : (isRevoked ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)');
+                  const badgeColor = isVerified ? '#059669' : (isRevoked ? '#dc2626' : '#d97706');
+
+                  return `
+                    <li class="helios-feed-item">
+                      <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; padding-right: 8px;">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${badgeColor}; flex-shrink: 0;"></div>
+                        <div style="overflow: hidden;">
+                          <div class="helios-feed-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(name)}</div>
+                          <div class="helios-feed-meta">${escapeHtml(idNum)} &bull; ${timeStr}</div>
                         </div>
                       </div>
-                    </td>
-                    <td>
-                      <span class="id-code">${p.id_number}</span>
-                    </td>
-                    <td>
-                      <div style="font-weight: 600; color: #334155; font-size: 12.5px;">${p.branch || 'Central'}</div>
-                      <div style="font-size: 11px; color: var(--text-muted);">${p.department || 'Traffic Operations'}</div>
-                    </td>
-                    <td>
-                      <span class="status-chip ${p.card_status === 'active' ? 'active' : (p.card_status === 'revoked' ? 'revoked' : 'neutral')}">
-                        <span class="chip-dot"></span>
-                        ${(p.card_status || 'Unissued').toUpperCase()}
+                      <span class="helios-badge" style="background: ${badgeBg}; color: ${badgeColor}; flex-shrink: 0;">
+                        ${outcome}
                       </span>
-                    </td>
-                    <td style="text-align: right;">
-                      <button class="btn btn-secondary btn-sm" onclick="navigate('directory')" title="View in Directory" style="padding: 5px 9px;">
-                        <i data-lucide="arrow-up-right" style="width: 13px; height: 13px;"></i>
-                      </button>
-                    </td>
-                  </tr>
-                `).join('') : `
-                  <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 36px;">No personnel registered in database.</td></tr>
+                    </li>
+                  `;
+                }).join('') : `
+                  <li class="helios-feed-item" style="justify-content: center; color: #94a3b8; font-size: 12.5px; padding: 24px 12px;">
+                    No verification scans recorded yet.
+                  </li>
                 `}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Recent Verification Activity Feed -->
-        <div class="console-panel-right">
-          <div class="panel-heading">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i data-lucide="radio" style="width: 18px; height: 18px; color: #10b981;"></i>
-              <span>Live Scan Stream</span>
+              </ul>
             </div>
-            <a onclick="navigate('history')" style="font-size: 12px; font-weight: 600; color: #2563eb; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 4px;">
-              Audit Log &rarr;
-            </a>
           </div>
-          <ul class="activity-feed" id="liveScanFeed">
-            <li class="activity-item">
-              <span class="activity-meta" style="color: var(--text-muted);">Loading scan stream...</span>
-            </li>
-          </ul>
+
+          <!-- RIGHT COLUMN (span 4): Recent Registrations -->
+          <div class="helios-col-4">
+            <div class="helios-glass-card" style="height: 100%;">
+              <div class="helios-card-header">
+                <span><i data-lucide="user-check" style="width: 15px; height: 15px; color: #2563eb;"></i> Recent Registrations</span>
+                <a onclick="navigate('directory')" style="color: #2563eb; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;">See all &rarr;</a>
+              </div>
+              <div class="helios-mini-grid" id="heliosRecentPeople">
+                ${recentPeople.length > 0 ? recentPeople.slice(0, 4).map(p => `
+                  <div class="helios-mini-card" onclick="openPersonInDirectory('${escapeHtml(p.id_number)}')">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      ${renderAvatar(p.photo_url, p.full_name, 28)}
+                      <div style="overflow: hidden;">
+                        <div class="helios-mini-title">${escapeHtml(p.full_name ? p.full_name.split(' ')[0] : 'Marshal')}</div>
+                        <div class="helios-mini-dept">${escapeHtml(p.position || p.department || 'Marshal')}</div>
+                      </div>
+                    </div>
+                    <div class="helios-mini-meta">${escapeHtml(p.id_number)}</div>
+                  </div>
+                `).join('') : `
+                  <div style="grid-column: span 2; text-align: center; color: #94a3b8; font-size: 12.5px; padding: 24px 12px;">
+                    No registered personnel found.
+                  </div>
+                `}
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTTOM WIDE SECTION (span 12): Verification Volume Chart -->
+          <div class="helios-col-12">
+            <div class="helios-glass-card">
+              <div class="helios-chart-header-row">
+                <div>
+                  <div style="font-weight: 700; color: #0f172a; font-size: 14px; font-family: var(--font-display); display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="trending-up" style="width: 16px; height: 16px; color: #2563eb;"></i>
+                    Verification Volume (Last 7 Days)
+                  </div>
+                  <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Daily scan throughput and security authentications</div>
+                </div>
+                <div class="helios-time-tabs">
+                  <button class="helios-time-tab" onclick="setVolumeFilter(this, '1d')">1D</button>
+                  <button class="helios-time-tab active" onclick="setVolumeFilter(this, '7d')">1W</button>
+                  <button class="helios-time-tab" onclick="setVolumeFilter(this, '30d')">1M</button>
+                </div>
+              </div>
+              <div class="helios-chart-container" id="heliosVolumeChart">
+                ${renderVolumeChartSvg(dailyVolume)}
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     `;
     lucide.createIcons();
-    loadLiveVerificationActivity();
   } catch (err) {
     container.innerHTML = `
       <div class="card" style="border-left: 4px solid #e11d48; padding: 20px;">
@@ -795,55 +757,218 @@ async function loadDashboardView(container) {
   }
 }
 
-// --- LIVE VERIFICATION ACTIVITY FEED ---
-function _getScanStatusClass(outcome) {
-  if (!outcome) return 'expired';
-  const s = outcome.toUpperCase();
-  if (s === 'VERIFIED') return 'verified';
-  if (s === 'REVOKED' || s === 'INVALID') return 'revoked';
-  if (s === 'SUSPENDED') return 'suspended';
-  return 'expired';
+// --- HELIOS CHART & HELPER METHODS ---
+function renderVolumeChartSvg(volumeData) {
+  const data = Array.isArray(volumeData) && volumeData.length > 0
+    ? volumeData
+    : [
+        { label: 'Day 1', count: 0, verified_count: 0 },
+        { label: 'Day 2', count: 0, verified_count: 0 },
+        { label: 'Day 3', count: 0, verified_count: 0 },
+        { label: 'Day 4', count: 0, verified_count: 0 },
+        { label: 'Day 5', count: 0, verified_count: 0 },
+        { label: 'Day 6', count: 0, verified_count: 0 },
+        { label: 'Today', count: 0, verified_count: 0 }
+      ];
+
+  const maxVal = Math.max(...data.map(d => Number(d.count) || 0), 5);
+  const totalVolume = data.reduce((acc, d) => acc + (Number(d.count) || 0), 0);
+  const totalVerified = data.reduce((acc, d) => acc + (Number(d.verified_count) || 0), 0);
+
+  const width = 800;
+  const height = 180;
+  const paddingX = 40;
+  const paddingTop = 20;
+  const paddingBottom = 35;
+  const innerWidth = width - (paddingX * 2);
+  const innerHeight = height - paddingTop - paddingBottom;
+
+  const points = data.map((d, i) => {
+    const x = paddingX + (i / Math.max(1, data.length - 1)) * innerWidth;
+    const y = paddingTop + innerHeight - ((Number(d.count) || 0) / maxVal) * innerHeight;
+    return { x, y, label: d.label, count: Number(d.count) || 0, verified: Number(d.verified_count) || 0 };
+  });
+
+  const pathD = points.map((p, i) => (i === 0 ? `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}` : `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)).join(' ');
+  const areaD = `${pathD} L ${points[points.length - 1].x.toFixed(1)} ${(paddingTop + innerHeight).toFixed(1)} L ${points[0].x.toFixed(1)} ${(paddingTop + innerHeight).toFixed(1)} Z`;
+
+  return `
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; gap: 16px; align-items: baseline;">
+        <span style="font-size: 26px; font-weight: 800; color: #0f172a; font-family: var(--font-display);">${totalVolume}</span>
+        <span style="font-size: 12px; color: #64748b; font-weight: 600;">Total 7-day scans &bull; <strong style="color: #059669;">${totalVerified} Verified</strong></span>
+      </div>
+      <div style="font-size: 11.5px; color: #94a3b8; font-family: var(--font-data);">Auto-synchronized live telemetry</div>
+    </div>
+    <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; min-width: 500px; height: auto; display: block; overflow: visible;">
+        <defs>
+          <linearGradient id="heliosAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#2563eb" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="#2563eb" stop-opacity="0.01" />
+          </linearGradient>
+        </defs>
+
+        <!-- Grid lines -->
+        <line x1="${paddingX}" y1="${paddingTop}" x2="${width - paddingX}" y2="${paddingTop}" stroke="rgba(226, 232, 240, 0.7)" stroke-dasharray="3,3" />
+        <line x1="${paddingX}" y1="${paddingTop + innerHeight / 2}" x2="${width - paddingX}" y2="${paddingTop + innerHeight / 2}" stroke="rgba(226, 232, 240, 0.7)" stroke-dasharray="3,3" />
+        <line x1="${paddingX}" y1="${paddingTop + innerHeight}" x2="${width - paddingX}" y2="${paddingTop + innerHeight}" stroke="#cbd5e1" stroke-width="1.2" />
+
+        <!-- Area Fill -->
+        <path d="${areaD}" fill="url(#heliosAreaGrad)" />
+
+        <!-- Line Stroke -->
+        <path d="${pathD}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+        <!-- Points & Labels -->
+        ${points.map(p => `
+          <g class="chart-point-group" style="cursor: pointer;">
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#ffffff" stroke="#2563eb" stroke-width="2.5" />
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="12" fill="transparent">
+              <title>${p.label}: ${p.count} scans (${p.verified} verified)</title>
+            </circle>
+            <text x="${p.x.toFixed(1)}" y="${(paddingTop + innerHeight + 20).toFixed(1)}" text-anchor="middle" font-size="11" fill="#64748b" font-family="var(--font-ui)" font-weight="600">${p.label}</text>
+          </g>
+        `).join('')}
+      </svg>
+    </div>
+  `;
 }
 
-function _esc(str) {
-  if (!str) return '';
-  return String(str).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
+function setVolumeFilter(btn, range) {
+  const tabs = document.querySelectorAll('.helios-time-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  const container = document.getElementById('heliosVolumeChart');
+  if (!container || !state.stats) return;
+
+  let filtered = state.stats.dailyVolume || [];
+  if (range === '1d') {
+    filtered = filtered.slice(-1);
+  } else if (range === '7d') {
+    filtered = filtered.slice(-7);
+  }
+  container.innerHTML = renderVolumeChartSvg(filtered);
 }
 
-async function loadLiveVerificationActivity() {
-  const feed = document.getElementById('liveScanFeed');
-  if (!feed) return;
-  try {
-    // Reuse already-fetched stats if available, otherwise fetch history
-    let events = [];
-    if (state.stats && state.stats.recentVerifications && state.stats.recentVerifications.length) {
-      events = state.stats.recentVerifications;
-    } else {
-      const res = await api('/api/history?limit=5');
-      events = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+function searchPersonnelFromDashboard(query) {
+  if (!query || !query.trim()) return;
+  state.currentRoute = 'directory';
+  navigate('directory');
+  setTimeout(() => {
+    const input = document.getElementById('directorySearchInput');
+    const btn = document.getElementById('directorySearchBtn');
+    if (input) {
+      input.value = query.trim();
+      if (btn) btn.click();
     }
-    if (!events.length) {
-      feed.innerHTML = `<li class="activity-item"><span class="activity-meta">No scans recorded in system yet.</span></li>`;
-      return;
+  }, 120);
+}
+
+function openPersonInDirectory(idNumber) {
+  if (!idNumber) return;
+  state.currentRoute = 'directory';
+  navigate('directory');
+  setTimeout(() => {
+    const input = document.getElementById('directorySearchInput');
+    const btn = document.getElementById('directorySearchBtn');
+    if (input) {
+      input.value = idNumber;
+      if (btn) btn.click();
     }
-    feed.innerHTML = events.slice(0, 5).map(v => {
-      const name = v.person_name || v.full_name || 'Unrecognized Credential';
-      const idNum = v.id_number || '';
-      const outcome = v.outcome || v.status || 'UNKNOWN';
-      const ts = v.created_at || v.timestamp;
-      const timeStr = ts ? formatRelativeTime(ts) : '--';
-      const cls = _getScanStatusClass(outcome);
-      return `
-        <li class="activity-item">
-          <div class="activity-details">
-            <span class="activity-name">${_esc(name)}</span>
-            <span class="activity-meta">${idNum ? _esc(idNum) + ' &bull; ' : ''}${timeStr}</span>
+  }, 120);
+}
+
+function promptStartAttendanceSession() {
+  const existing = document.getElementById('startSessionModalOverlay');
+  if (existing) existing.remove();
+
+  const modalHtml = `
+    <div id="startSessionModalOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease;">
+      <div style="background: #ffffff; border-radius: 16px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3); width: 100%; max-width: 440px; padding: 24px; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div style="font-size: 17px; font-weight: 800; color: #0f172a; font-family: var(--font-display); display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="play-circle" style="width: 20px; height: 20px; color: #059669;"></i>
+            Start Attendance Session
           </div>
-          <span class="status-badge ${cls}">${_esc(outcome)}</span>
-        </li>`;
-    }).join('');
+          <button onclick="document.getElementById('startSessionModalOverlay').remove()" style="background: none; border: none; font-size: 18px; color: #94a3b8; cursor: pointer; padding: 4px;">✕</button>
+        </div>
+        <p style="font-size: 13px; color: #64748b; margin: 0 0 16px 0; line-height: 1.5;">
+          Label the active service or occasion. Every subsequent ID scan on any phone or PC will automatically record check-ins to this event.
+        </p>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px;">Event / Occasion Name</label>
+          <input type="text" id="heliosEventNameInput" placeholder="e.g. Sunday Main Service" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none;" onkeydown="if(event.key==='Enter') submitHeliosStartSession()" />
+        </div>
+        <div style="display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap;">
+          <span onclick="setPresetEvent('Sunday Main Service')" style="font-size: 11px; font-weight: 600; padding: 4px 10px; background: #f1f5f9; color: #334155; border-radius: 12px; cursor: pointer;">Sunday Service</span>
+          <span onclick="setPresetEvent('Midweek Communion')" style="font-size: 11px; font-weight: 600; padding: 4px 10px; background: #f1f5f9; color: #334155; border-radius: 12px; cursor: pointer;">Midweek Communion</span>
+          <span onclick="setPresetEvent('Youth Assembly')" style="font-size: 11px; font-weight: 600; padding: 4px 10px; background: #f1f5f9; color: #334155; border-radius: 12px; cursor: pointer;">Youth Assembly</span>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button onclick="document.getElementById('startSessionModalOverlay').remove()" class="btn btn-secondary" style="padding: 9px 16px; border-radius: 8px;">Cancel</button>
+          <button onclick="submitHeliosStartSession()" class="btn btn-primary" style="background: #059669; border-color: #059669; color: #ffffff; padding: 9px 18px; border-radius: 8px; font-weight: 700;">
+            <i data-lucide="play" style="width: 14px; height: 14px;"></i> Start Session
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  lucide.createIcons();
+  const input = document.getElementById('heliosEventNameInput');
+  if (input) input.focus();
+}
+
+function setPresetEvent(name) {
+  const input = document.getElementById('heliosEventNameInput');
+  if (input) {
+    input.value = name;
+    input.focus();
+  }
+}
+
+async function submitHeliosStartSession() {
+  const input = document.getElementById('heliosEventNameInput');
+  const eventName = input ? input.value.trim() : '';
+  if (!eventName) {
+    alert('Please enter an event name.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/attendance/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ event_name: eventName })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to start session');
+
+    const overlay = document.getElementById('startSessionModalOverlay');
+    if (overlay) overlay.remove();
+
+    loadDashboardView(document.getElementById('pageContent'));
   } catch (err) {
-    if (feed) feed.innerHTML = `<li class="activity-item"><span class="activity-meta" style="color:#e11d48;">Failed to load live activity.</span></li>`;
+    alert('Failed to start session: ' + err.message);
+  }
+}
+
+async function promptEndAttendanceSession() {
+  if (!confirm('Close this active attendance session? New scans will no longer attach to this event.')) return;
+  try {
+    const res = await fetch('/api/attendance/sessions/close', {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to close session');
+    }
+    loadDashboardView(document.getElementById('pageContent'));
+  } catch (err) {
+    alert('Failed to close session: ' + err.message);
   }
 }
 

@@ -69,9 +69,28 @@ router.get('/stats', authenticate, async (req, res) => {
       LIMIT 8
     `, [orgId]);
 
-    const idStats = idStatsRes.rows[0];
-    const cardStats = cardStatsRes.rows[0];
-    const verifStats = verifStatsRes.rows[0];
+    // 6. Active attendance session
+    const activeSessionRes = await db.query(`
+      SELECT * FROM attendance_sessions WHERE is_active = true ORDER BY created_at DESC LIMIT 1
+    `).catch(() => ({ rows: [] }));
+
+    // 7. 7-day verification timeline for the Helios volume chart
+    const dailyScansRes = await db.query(`
+      SELECT 
+        TO_CHAR(d.day, 'Mon DD') as label,
+        d.day::date as date,
+        COUNT(ve.id)::int as count,
+        COUNT(ve.id) FILTER (WHERE ve.outcome = 'verified')::int as verified_count
+      FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day'::interval) d(day)
+      LEFT JOIN verification_events ve 
+        ON DATE(ve.created_at) = d.day::date AND ve.organisation_id = $1
+      GROUP BY d.day
+      ORDER BY d.day ASC
+    `, [orgId]).catch(() => ({ rows: [] }));
+
+    const idStats = idStatsRes.rows[0] || {};
+    const cardStats = cardStatsRes.rows[0] || {};
+    const verifStats = verifStatsRes.rows[0] || {};
 
     return res.json({
       metrics: {
@@ -86,8 +105,10 @@ router.get('/stats', authenticate, async (req, res) => {
         verifiedScans30Days: parseInt(verifStats.verified_scans || 0, 10),
         revokedScans30Days: parseInt(verifStats.revoked_scans || 0, 10)
       },
-      recentVerifications: recentVerifsRes.rows,
-      recentPeople: recentPeopleRes.rows
+      activeSession: activeSessionRes.rows[0] || null,
+      dailyVolume: dailyScansRes.rows || [],
+      recentVerifications: recentVerifsRes.rows || [],
+      recentPeople: recentPeopleRes.rows || []
     });
   } catch (err) {
     console.error('Dashboard stats error:', err);
