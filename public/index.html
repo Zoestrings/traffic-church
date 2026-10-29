@@ -697,15 +697,14 @@
     .helios-greeting {
       font-size: 28px;
       font-weight: 800;
-      color: #f8fafc;
+      color: #0f172a;
       letter-spacing: -0.025em;
       margin: 0 0 4px 0;
       font-family: var(--font-display);
-      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
     }
 
     .helios-subtitle {
-      color: #94a3b8;
+      color: #64748b;
       font-size: 13.5px;
       margin: 0;
     }
@@ -718,32 +717,29 @@
     }
 
     .helios-pill-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #94a3b8;
-      padding: 8px 18px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      color: #64748b;
+      padding: 8px 16px;
       border-radius: 20px;
       font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.15s ease;
       font-family: var(--font-display);
     }
 
     .helios-pill-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #cbd5e1;
     }
 
     .helios-pill-btn.active {
-      background: rgba(37, 99, 235, 0.25);
+      background: #0f172a;
       color: #ffffff;
-      border-color: rgba(59, 130, 246, 0.5);
-      box-shadow: 0 0 20px rgba(37, 99, 235, 0.35);
+      border-color: #0f172a;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
     }
 
     .helios-search {
@@ -754,23 +750,19 @@
 
     .helios-search input {
       padding: 8px 14px 8px 36px;
-      background: rgba(15, 23, 42, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #ffffff;
+      border: 1px solid var(--border-color);
       border-radius: 20px;
       font-size: 12.5px;
-      color: #f8fafc;
       outline: none;
       min-width: 220px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       font-family: var(--font-ui);
     }
 
     .helios-search input:focus {
-      background: rgba(15, 23, 42, 0.85);
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
 
     .helios-search i {
@@ -800,26 +792,22 @@
       grid-column: span 12;
     }
 
-    /* Luxurious Transparent Glass Cards */
+    /* Glass Cards */
     .helios-glass-card {
-      background: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
       padding: 22px 24px;
-      box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
       display: flex;
       flex-direction: column;
       position: relative;
       overflow: hidden;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .helios-glass-card:hover {
-      border-color: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
-      transform: translateY(-2px);
+      box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.08);
     }
 
     .helios-card-header {
@@ -827,7 +815,7 @@
       justify-content: space-between;
       align-items: center;
       font-size: 13px;
-      color: #94a3b8;
+      color: #64748b;
       font-weight: 600;
       margin-bottom: 14px;
     }
@@ -837,30 +825,27 @@
       align-items: center;
       gap: 8px;
       font-weight: 700;
-      color: #f8fafc;
+      color: #0f172a;
       font-family: var(--font-display);
     }
 
     .helios-massive-number {
-      font-size: 44px;
+      font-size: 42px;
       font-weight: 800;
-      color: #ffffff;
+      color: #0f172a;
       margin: 6px 0 4px 0;
       letter-spacing: -0.03em;
       font-family: var(--font-display);
       line-height: 1.1;
-      text-shadow: 0 2px 14px rgba(255, 255, 255, 0.15);
     }
 
     .helios-badge {
-      background: rgba(37, 99, 235, 0.2);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      color: #60a5fa;
-      padding: 3px 9px;
+      background: #eff6ff;
+      color: #2563eb;
+      padding: 3px 8px;
       border-radius: 12px;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.02em;
     }
 
     .helios-subtext {
@@ -869,7 +854,7 @@
       margin: 0;
     }
 
-    /* Transparent Feed List */
+    /* Feed List */
     .helios-feed-list {
       list-style: none;
       padding: 0;
@@ -883,33 +868,33 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 11px 14px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 10px 12px;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.15s ease;
     }
 
     .helios-feed-item:hover {
-      background: rgba(255, 255, 255, 0.07);
-      border-color: rgba(255, 255, 255, 0.14);
-      transform: translateX(2px);
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     .helios-feed-name {
       font-size: 13px;
       font-weight: 700;
-      color: #f8fafc;
+      color: #0f172a;
     }
 
     .helios-feed-meta {
       font-size: 11px;
-      color: #94a3b8;
+      color: #64748b;
       margin-top: 2px;
       font-family: var(--font-data);
     }
 
-    /* Transparent Mini Card Grid (Right Column) */
+    /* Mini Card Grid (Right Column) */
     .helios-mini-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -917,29 +902,29 @@
     }
 
     .helios-mini-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
       padding: 14px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.15s ease;
       cursor: pointer;
-      min-height: 86px;
+      min-height: 82px;
     }
 
     .helios-mini-card:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.16);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      background: #ffffff;
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
     .helios-mini-title {
       font-size: 12.5px;
       font-weight: 700;
-      color: #f8fafc;
+      color: #0f172a;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -947,7 +932,7 @@
 
     .helios-mini-meta {
       font-size: 11px;
-      color: #60a5fa;
+      color: #2563eb;
       font-family: var(--font-data);
       font-weight: 600;
       margin-top: 4px;
@@ -981,33 +966,27 @@
     .helios-time-tabs {
       display: flex;
       gap: 4px;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 4px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
     }
 
     .helios-time-tab {
-      padding: 5px 12px;
+      padding: 4px 10px;
       font-size: 11px;
       font-weight: 700;
-      border-radius: 7px;
+      border-radius: 6px;
       border: none;
       background: transparent;
-      color: #94a3b8;
+      color: #64748b;
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
-    .helios-time-tab:hover {
-      color: #ffffff;
-    }
-
     .helios-time-tab.active {
-      background: rgba(255, 255, 255, 0.12);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
     /* Responsive Breakpoints */
@@ -2934,6 +2913,8 @@
         display: none;
       }
   </style>
+  <!-- Skillset Modern Dashboard Stylesheet -->
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>

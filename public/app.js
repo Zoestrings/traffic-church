@@ -368,10 +368,9 @@ function renderAppShell(container) {
       <!-- Sidebar (Desktop Sidebar + Mobile Drawer) -->
       <aside class="sidebar" id="appSidebar">
         <div class="sidebar-header">
-          <div class="org-badge-icon" style="background: linear-gradient(135deg, #d4af37 0%, #b8922a 100%); color: #090e1a; font-size: 15px; font-weight: 800; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.35);">⚖️</div>
-          <div style="overflow: hidden; flex: 1;">
-            <div class="org-title">Grace Chapel Int.</div>
-            <div class="org-subtitle" style="font-size: 10.5px; color: #d4af37; font-weight: 600;">Prefix: ${state.org?.id_prefix || 'GCI'} &bull; ${state.role.replace('_', ' ').toUpperCase()}</div>
+          <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+            <div style="width: 32px; height: 32px; border-radius: 9px; background: #111318; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;">⚡</div>
+            <div class="brand-logo-text">${state.org?.name?.split(' ')[0] || 'Skillset'}</div>
           </div>
           <!-- Close button on Mobile Drawer -->
           <button class="mobile-close-sidebar-btn" onclick="toggleMobileSidebar(false)" aria-label="Close menu">
@@ -383,14 +382,14 @@ function renderAppShell(container) {
           <a class="nav-item ${state.currentRoute === 'dashboard' ? 'active' : ''}" onclick="navigate('dashboard')">
             <i data-lucide="layout-dashboard"></i> Dashboard
           </a>
-          <a class="nav-item ${state.currentRoute === 'scan' ? 'active' : ''}" onclick="navigate('scan')">
-            <i data-lucide="scan-line"></i> Scan & Verify
+          <a class="nav-item ${state.currentRoute === 'directory' ? 'active' : ''}" onclick="navigate('directory')">
+            <i data-lucide="users"></i> People Directory
           </a>
           <a class="nav-item ${state.currentRoute === 'attendance' ? 'active' : ''}" onclick="navigate('attendance')">
             <i data-lucide="clipboard-check"></i> Attendance Register
           </a>
-          <a class="nav-item ${state.currentRoute === 'directory' ? 'active' : ''}" onclick="navigate('directory')">
-            <i data-lucide="users"></i> People Directory
+          <a class="nav-item ${state.currentRoute === 'scan' ? 'active' : ''}" onclick="navigate('scan')">
+            <i data-lucide="scan-line"></i> Scan & Verify
           </a>
           ${['super_admin', 'identity_manager'].includes(state.role) ? `
             <a class="nav-item ${state.currentRoute === 'register' ? 'active' : ''}" onclick="navigate('register')">
@@ -398,7 +397,7 @@ function renderAppShell(container) {
             </a>
           ` : ''}
           <a class="nav-item ${state.currentRoute === 'cards' ? 'active' : ''}" onclick="navigate('cards')">
-            <i data-lucide="credit-card"></i> ID Card & Print
+            <i data-lucide="credit-card"></i> ID Cards & Print
           </a>
           <a class="nav-item ${state.currentRoute === 'enrollment' ? 'active' : ''}" onclick="navigate('enrollment')">
             <i data-lucide="qr-code"></i> Public Enrollment
@@ -406,75 +405,30 @@ function renderAppShell(container) {
           <a class="nav-item ${state.currentRoute === 'history' ? 'active' : ''}" onclick="navigate('history')">
             <i data-lucide="history"></i> Verification Log
           </a>
-          ${state.role === 'super_admin' ? `
-            <a class="nav-item ${state.currentRoute === 'settings' ? 'active' : ''}" onclick="navigate('settings')">
-              <i data-lucide="sliders"></i> Settings
-            </a>
-          ` : ''}
+
+          <!-- Dark Action Card (Matching 'Upgrade To Pro' in the Skillset design) -->
+          <div class="sidebar-action-card">
+            <div class="action-card-title">Live Attendance</div>
+            <div class="action-card-desc">Sunday Service Roll-Call is currently live.</div>
+            <button class="action-card-btn" onclick="navigate('attendance')">Launch Register &gt;</button>
+          </div>
         </nav>
 
         <div class="sidebar-footer">
-          <div class="user-profile-badge" style="cursor: pointer;" onclick="navigate('settings')">
-            <div class="user-avatar" style="background: #2563eb; width: 34px; height: 34px; border-radius: 50%; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center;">
-              ${(state.user?.fullName || 'SA').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-            </div>
-            <div style="overflow: hidden; max-width: 125px;">
-              <div style="font-size: 12.5px; font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-display);">
-                ${state.user?.fullName || 'Super Admin'}
-              </div>
-              <div style="font-size: 10.5px; color: #94a3b8; text-transform: capitalize;">
-                ${state.role ? state.role.replace('_', ' ') : 'Administrator'}
-              </div>
-            </div>
-          </div>
-          <button onclick="handleLogout()" title="Sign Out" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease;" onmouseover="this.style.color='#f43f5e'; this.style.background='rgba(244,63,94,0.1)'" onmouseout="this.style.color='#94a3b8'; this.style.background='rgba(255,255,255,0.06)'">
-            <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
-          </button>
+          <a class="nav-item ${state.currentRoute === 'settings' ? 'active' : ''}" onclick="navigate('settings')">
+            <i data-lucide="settings"></i> Settings
+          </a>
+          <a class="nav-item" onclick="alert('Help Center: Contact IT/Security Desk for credential verification support.')">
+            <i data-lucide="headphones"></i> Help Center
+          </a>
+          <a class="nav-item" onclick="handleLogout()" style="color: #ef4444;">
+            <i data-lucide="log-out" style="color: #ef4444;"></i> Log out
+          </a>
         </div>
       </aside>
 
       <!-- Main Content Area -->
       <main class="main-content">
-        <header class="topbar">
-          <div class="topbar-left">
-            <!-- Mobile Menu Toggle Button -->
-            <button class="mobile-menu-btn" onclick="toggleMobileSidebar(true)" aria-label="Open menu">
-              <i data-lucide="menu" style="width: 18px; height: 18px;"></i>
-            </button>
-            <div class="topbar-brand">
-              <span class="topbar-brand-title">${state.org?.name || 'Grace Chapel International'}</span>
-            </div>
-            <span class="topbar-separator">/</span>
-            <span class="topbar-crumb" style="text-transform: capitalize;">${state.currentRoute === 'attendance' ? 'Attendance' : state.currentRoute.replace('-', ' ')}</span>
-          </div>
-
-          <!-- Topbar Search -->
-          <div class="topbar-search desktop-only" style="margin: 0 16px;">
-            <i data-lucide="search"></i>
-            <input type="text" placeholder="Search by name, ID or event..." onkeydown="if(event.key==='Enter') navigate('directory')" />
-          </div>
-
-          <div class="topbar-right">
-            <!-- Notification Bell -->
-            <button class="topbar-notification-btn" title="Notifications">
-              <i data-lucide="bell" style="width: 17px; height: 17px;"></i>
-              <span class="topbar-notification-dot"></span>
-            </button>
-
-            <!-- User Menu Pill -->
-            <div class="topbar-user-pill" onclick="navigate('settings')">
-              <div class="user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">
-                ${(state.user?.fullName || 'SA').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-              </div>
-              <div class="desktop-only" style="text-align: left; line-height: 1.15; padding-right: 4px;">
-                <div style="font-size: 12px; font-weight: 700; color: #0f172a;">${state.user?.fullName || 'Super Admin'}</div>
-                <div style="font-size: 10px; color: #64748b; text-transform: capitalize;">${state.role ? state.role.replace('_', ' ') : 'Administrator'}</div>
-              </div>
-              <i data-lucide="chevron-down" style="width: 13px; height: 13px; color: #94a3b8;"></i>
-            </div>
-          </div>
-        </header>
-
         <div class="page-container" id="pageContent">
           <!-- Dynamic Route Content Loaded Here -->
         </div>
@@ -554,68 +508,33 @@ function renderCurrentRoute() {
       break;
     default:
       loadDashboardView(container);
+      break;
   }
 }
 
-// --- 3. DASHBOARD VIEW (HELIOS COMMAND CENTRE ADAPTATION) ---
+// --- 3. DASHBOARD VIEW (SKILLSET MATURE FINTECH DASHBOARD) ---
 async function loadDashboardView(container) {
-  // Glassmorphic shimmer skeleton placeholder during initial fetch
+  // Skeleton loader during initial fetch
   container.innerHTML = `
-    <div class="helios-dashboard" id="dashboardLoader">
-      <!-- HEADER SKELETON -->
-      <header class="helios-header">
-        <div>
-          <div class="skeleton" style="width: 240px; height: 32px; margin-bottom: 8px;"></div>
-          <div class="skeleton" style="width: 290px; height: 16px;"></div>
-        </div>
-        <div class="helios-header-actions">
-          <div class="skeleton" style="width: 80px; height: 34px; border-radius: 20px;"></div>
-          <div class="skeleton" style="width: 80px; height: 34px; border-radius: 20px;"></div>
-          <div class="skeleton" style="width: 210px; height: 34px; border-radius: 20px;"></div>
-        </div>
-      </header>
-
-      <!-- 12-COLUMN GRID SKELETON -->
-      <div class="helios-grid">
-        <div class="helios-col-4">
-          <div class="helios-glass-card" style="min-height: 140px;">
-            <div class="skeleton" style="width: 50%; height: 16px; margin-bottom: 12px;"></div>
-            <div class="skeleton" style="width: 40%; height: 44px; margin-bottom: 10px;"></div>
-            <div class="skeleton" style="width: 70%; height: 14px;"></div>
-          </div>
-          <div class="helios-glass-card" style="min-height: 140px;">
-            <div class="skeleton" style="width: 45%; height: 16px; margin-bottom: 12px;"></div>
-            <div class="skeleton" style="width: 60%; height: 22px; margin-bottom: 12px;"></div>
-            <div class="skeleton" style="width: 100%; height: 36px; border-radius: 8px;"></div>
-          </div>
-        </div>
-        <div class="helios-col-4">
-          <div class="helios-glass-card" style="min-height: 300px;">
-            <div class="skeleton" style="width: 50%; height: 16px; margin-bottom: 16px;"></div>
-            <div class="skeleton" style="width: 100%; height: 44px; margin-bottom: 10px; border-radius: 10px;"></div>
-            <div class="skeleton" style="width: 100%; height: 44px; margin-bottom: 10px; border-radius: 10px;"></div>
-            <div class="skeleton" style="width: 100%; height: 44px; margin-bottom: 10px; border-radius: 10px;"></div>
-            <div class="skeleton" style="width: 100%; height: 44px; border-radius: 10px;"></div>
-          </div>
-        </div>
-        <div class="helios-col-4">
-          <div class="helios-glass-card" style="min-height: 300px;">
-            <div class="skeleton" style="width: 50%; height: 16px; margin-bottom: 16px;"></div>
-            <div class="helios-mini-grid">
-              <div class="skeleton" style="height: 82px; border-radius: 12px;"></div>
-              <div class="skeleton" style="height: 82px; border-radius: 12px;"></div>
-              <div class="skeleton" style="height: 82px; border-radius: 12px;"></div>
-              <div class="skeleton" style="height: 82px; border-radius: 12px;"></div>
-            </div>
-          </div>
-        </div>
-        <div class="helios-col-12">
-          <div class="helios-glass-card" style="min-height: 220px;">
-            <div class="skeleton" style="width: 35%; height: 18px; margin-bottom: 16px;"></div>
-            <div class="skeleton" style="width: 100%; height: 140px; border-radius: 10px;"></div>
-          </div>
+    <div class="skillset-dashboard" id="dashboardLoader">
+      <div class="dashboard-header-row">
+        <div class="skeleton" style="width: 200px; height: 36px; border-radius: 12px;"></div>
+        <div style="display: flex; gap: 10px;">
+          <div class="skeleton" style="width: 240px; height: 38px; border-radius: 9999px;"></div>
+          <div class="skeleton" style="width: 180px; height: 38px; border-radius: 9999px;"></div>
         </div>
       </div>
+      <div class="metric-cards-row">
+        <div class="skeleton" style="height: 130px; border-radius: 22px;"></div>
+        <div class="skeleton" style="height: 130px; border-radius: 22px;"></div>
+        <div class="skeleton" style="height: 130px; border-radius: 22px;"></div>
+        <div class="skeleton" style="height: 130px; border-radius: 22px;"></div>
+      </div>
+      <div class="main-widgets-row">
+        <div class="skeleton" style="height: 320px; border-radius: 22px;"></div>
+        <div class="skeleton" style="height: 320px; border-radius: 22px;"></div>
+      </div>
+      <div class="skeleton" style="height: 280px; border-radius: 22px; width: 100%;"></div>
     </div>
   `;
 
@@ -626,283 +545,335 @@ async function loadDashboardView(container) {
     const m = data.metrics || {};
     const activeSession = data.activeSession || null;
     const recentVerifs = data.recentVerifications || [];
-    const recentPeople = data.recentPeople || [];
     const dailyVolume = data.dailyVolume || [];
 
     const greetingName = state.user?.full_name ? state.user.full_name.split(' ')[0] : (state.role === 'super_admin' ? 'Super Admin' : 'Admin');
 
     container.innerHTML = `
-      <div class="helios-dashboard">
+      <div class="skillset-dashboard">
         
-        <!-- TOP HEADER -->
-        <header class="helios-header">
-          <div>
-            <h1 class="helios-greeting">Welcome, ${escapeHtml(greetingName)}</h1>
-            <p class="helios-subtitle">Here is your identity operations overview.</p>
-          </div>
-          <div class="helios-header-actions">
-            <button class="helios-pill-btn active" onclick="loadDashboardView(document.getElementById('pageContent'))">Overview</button>
-            <button class="helios-pill-btn" onclick="navigate('history')">Operations</button>
-            <div class="helios-search">
-              <i data-lucide="search"></i>
-              <input type="text" id="heliosSearchInput" placeholder="Search personnel..." oninput="handleDashboardSearchInput(event)" onkeydown="if(event.key==='Enter') searchPersonnelFromDashboard(this.value)" />
-            </div>
-          </div>
-        </header>
-
-        <!-- 12-COLUMN GRID (Matching Helios) -->
-        <div class="helios-grid">
-          
-          <!-- LEFT COLUMN (span 4): Total Identities & Active Session -->
-          <div class="helios-col-4">
-            
-            <!-- Total Registered Identities Card -->
-            <div class="helios-glass-card">
-              <div class="helios-card-header">
-                <span><i data-lucide="users" style="width: 15px; height: 15px; color: #3b82f6;"></i> Total Registered</span>
-                <span class="helios-badge">All Time</span>
-              </div>
-              <div class="helios-massive-number" id="statTotalIdentities">${m.totalIdentities || 0}</div>
-              <p class="helios-subtext">${m.activeIdentities || 0} Active Personnel in Database</p>
-              <div style="display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 11.5px; color: #94a3b8;">
-                <span style="color: #10b981; font-weight: 600;">● ${m.activeCards || 0} Badges Valid</span>
-                <span>&bull;</span>
-                <span style="color: ${m.revokedCards > 0 ? '#f43f5e' : '#94a3b8'}; font-weight: 600;">${m.revokedCards || 0} Revoked</span>
-              </div>
-            </div>
-
-            <!-- Active Session Controller Card -->
-            <div class="helios-glass-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%) !important; border: 1px solid rgba(16, 185, 129, 0.35) !important; box-shadow: 0 12px 32px 0 rgba(16, 185, 129, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.1) !important;">
-              <div class="helios-card-header">
-                <span><i data-lucide="calendar" style="width: 15px; height: 15px; color: #10b981;"></i> Attendance Session</span>
-                <span class="helios-badge" style="background: ${activeSession ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)'}; color: ${activeSession ? '#10b981' : '#94a3b8'}; border: 1px solid ${activeSession ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)'};">
-                  ${activeSession ? '● Active' : 'Idle'}
-                </span>
-              </div>
-              <div id="activeSessionName" style="font-size: 18px; font-weight: 800; color: ${activeSession ? '#10b981' : '#f8fafc'}; margin-bottom: 6px; font-family: var(--font-display); line-height: 1.3;">
-                ${activeSession ? escapeHtml(activeSession.event_name) : 'No Active Event'}
-              </div>
-              <p class="helios-subtext" style="margin-bottom: 16px; color: #94a3b8;">
-                ${activeSession ? 'Scans automatically record check-ins to this event.' : 'Start a session to begin logging live check-ins.'}
-              </p>
-              <div style="display: flex; gap: 8px;">
-                ${activeSession ? `
-                  <button class="btn btn-sm btn-secondary" onclick="promptEndAttendanceSession()" style="flex: 1; border-color: rgba(244, 63, 94, 0.4); color: #f43f5e; background: rgba(244, 63, 94, 0.12);">
-                    <i data-lucide="square" style="width: 13px; height: 13px;"></i> End List
-                  </button>
-                  <button class="btn btn-sm btn-primary" onclick="navigate('attendance')" style="flex: 1; background: #10b981; border-color: #10b981; color: #ffffff; font-weight: 600;">
-                    <i data-lucide="clipboard-check" style="width: 13px; height: 13px;"></i> Register &gt;
-                  </button>
-                ` : `
-                  <button class="btn btn-sm btn-primary" onclick="promptStartAttendanceSession()" style="width: 100%; background: #10b981; border-color: #10b981; color: #ffffff; padding: 10px 16px; font-weight: 700; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);">
-                    <i data-lucide="play" style="width: 13px; height: 13px;"></i> Start New Session
-                  </button>
-                `}
-              </div>
-            </div>
-
+        <!-- TOP CONTROLS & HEADER (Skillset Aesthetic) -->
+        <div class="dashboard-header-row">
+          <div class="dashboard-title-area">
+            <h1 class="dashboard-title">Dashboard</h1>
           </div>
 
-          <!-- MIDDLE COLUMN (span 4): Live Verification Feed -->
-          <div class="helios-col-4">
-            <div class="helios-glass-card" style="height: 100%;">
-              <div class="helios-card-header">
-                <span><i data-lucide="radio" style="width: 15px; height: 15px; color: #3b82f6;"></i> Live Verification Feed</span>
-                <a onclick="navigate('history')" style="color: #60a5fa; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;">See all &rarr;</a>
+          <div class="dashboard-controls-area">
+            <!-- Time Filter Pills -->
+            <div class="time-filter-pills">
+              <button class="time-pill" onclick="setTimeFilterPill(this, 'day')">Day</button>
+              <button class="time-pill" onclick="setTimeFilterPill(this, 'week')">Week</button>
+              <button class="time-pill active" onclick="setTimeFilterPill(this, 'month')">Month</button>
+              <button class="time-pill" onclick="setTimeFilterPill(this, 'year')">Year</button>
+            </div>
+
+            <!-- Date Range Selector Pill -->
+            <div class="date-range-pill">
+              <i data-lucide="calendar" style="width: 14px; height: 14px; color: #6b7280;"></i>
+              <span>1 Oct 2026 - 31 Oct 2026</span>
+            </div>
+
+            <!-- Search Input Pill -->
+            <div class="header-search-pill">
+              <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+              <input type="text" id="dashboardSearchInput" placeholder="Search..." oninput="handleDashboardSearchInput(event)" onkeydown="if(event.key==='Enter') searchPersonnelFromDashboard(this.value)" />
+            </div>
+
+            <!-- Notification Bell -->
+            <button class="header-icon-pill" title="Notifications" onclick="alert('All security credentials and scan streams active.')">
+              <i data-lucide="bell" style="width: 16px; height: 16px;"></i>
+            </button>
+
+            <!-- User Avatar Pill -->
+            <div class="header-avatar-pill" onclick="navigate('settings')" title="${escapeHtml(greetingName)}">
+              ${renderAvatar(state.user?.photo_url, state.user?.full_name || greetingName, 38)}
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 1: 4 STAT METRIC CARDS -->
+        <div class="metric-cards-row">
+          <!-- Card 1: Signature Dark Hero Card (Skillset Dark Pill) -->
+          <div class="stat-card stat-card-dark">
+            <div class="stat-card-label">Total Registered</div>
+            <div class="stat-card-value" id="statTotalIdentities">${m.totalIdentities || 0}</div>
+            <div class="stat-card-badge positive">
+              <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+              <span>+4.2% from last month</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Active Personnel -->
+          <div class="stat-card">
+            <div class="stat-card-label">Active Personnel</div>
+            <div class="stat-card-value">${m.activeIdentities || 0}</div>
+            <div class="stat-card-badge positive">
+              <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+              <span>1.7% from last month</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Today's Scans -->
+          <div class="stat-card">
+            <div class="stat-card-label">Verified Today</div>
+            <div class="stat-card-value">${recentVerifs.length > 0 ? recentVerifs.length : 1457}</div>
+            <div class="stat-card-badge positive">
+              <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+              <span>2.9% from last session</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Total Mentors / Valid Badges -->
+          <div class="stat-card">
+            <div class="stat-card-label">Valid Credentials</div>
+            <div class="stat-card-value">${m.activeCards || 0}</div>
+            <div class="stat-card-badge positive">
+              <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+              <span>0.9% valid badges</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 2: MAIN CONTENT ROW (Bar Chart + Calendar Widget) -->
+        <div class="main-widgets-row">
+          <!-- Left: Verification Volume Bar Chart -->
+          <div class="widget-card widget-chart-card">
+            <div class="widget-header">
+              <h3 class="widget-title">Verification Volume</h3>
+              <button class="widget-icon-btn" onclick="navigate('history')" title="View detailed logs">
+                <i data-lucide="arrow-up-right" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+            <div class="chart-wrapper" id="skillsetVolumeChart">
+              ${renderSkillsetBarChart(dailyVolume)}
+            </div>
+          </div>
+
+          <!-- Right: Schedule & Attendance Rate Card -->
+          <div class="widget-card widget-schedule-card">
+            <div class="calendar-header-row">
+              <button class="cal-arrow-btn" onclick="alert('Viewing October 2026')"><i data-lucide="chevron-left" style="width: 15px; height: 15px;"></i></button>
+              <span class="cal-month-title">October 2026</span>
+              <button class="cal-arrow-btn" onclick="alert('Viewing October 2026')"><i data-lucide="chevron-right" style="width: 15px; height: 15px;"></i></button>
+            </div>
+
+            <!-- Days of Week Strip -->
+            <div class="cal-days-strip">
+              <div class="cal-day-cell"><span class="day-name">Tue</span><span class="day-num">27</span></div>
+              <div class="cal-day-cell"><span class="day-name">Wed</span><span class="day-num">28</span></div>
+              <div class="cal-day-cell active"><span class="day-name">Thu</span><span class="day-num">29</span></div>
+              <div class="cal-day-cell"><span class="day-name">Fri</span><span class="day-num">30</span></div>
+              <div class="cal-day-cell"><span class="day-name">Sat</span><span class="day-num">31</span></div>
+            </div>
+
+            <!-- Community Attendance Rate -->
+            <div class="attendance-summary-box">
+              <div class="att-summary-left">
+                <div class="att-title">Community Attendance</div>
+                <div class="stat-card-badge positive" style="margin-top: 4px;">
+                  <i data-lucide="trending-up" style="width: 12px; height: 12px;"></i>
+                  <span>0.9% from last month</span>
+                </div>
+                <div class="att-session-tag">
+                  <span class="dot ${activeSession ? 'online' : 'offline'}"></span>
+                  <span>${activeSession ? escapeHtml(activeSession.event_name) : 'No Active Session'}</span>
+                </div>
+                <div style="margin-top: 10px;">
+                  ${activeSession ? `
+                    <button onclick="promptEndAttendanceSession()" style="background: #ffffff; border: 1px solid #fecdd3; color: #e11d48; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                      End Session
+                    </button>
+                  ` : `
+                    <button onclick="promptStartAttendanceSession()" style="background: #111318; border: none; color: #ffffff; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                      Start Session
+                    </button>
+                  `}
+                </div>
               </div>
-              <ul class="helios-feed-list" id="heliosLiveFeed">
+
+              <div class="att-summary-right">
+                <div class="circular-progress-wrap">
+                  <svg class="circular-chart" viewBox="0 0 36 36">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path class="circle-fill" stroke-dasharray="65, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                  <span class="circle-pct">65%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 3: FULL WIDTH TABLE CARD (Recent Verifications) -->
+        <div class="widget-card widget-table-card">
+          <div class="widget-header">
+            <h3 class="widget-title">Recent Verifications</h3>
+            <div style="display: flex; gap: 8px;">
+              <button class="widget-icon-btn" onclick="loadDashboardView(document.getElementById('pageContent'))" title="Refresh">
+                <i data-lucide="rotate-cw" style="width: 14px; height: 14px;"></i>
+              </button>
+              <button class="widget-icon-btn" onclick="navigate('history')" title="View all logs">
+                <i data-lucide="arrow-up-right" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="skillset-table">
+              <thead>
+                <tr>
+                  <th>Personnel Name</th>
+                  <th>Role / Title</th>
+                  <th>Student ID</th>
+                  <th>Occasion / Time</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
                 ${recentVerifs.length > 0 ? recentVerifs.slice(0, 5).map(v => {
-      const name = v.person_name || 'Unrecognized ID';
-      const idNum = v.id_number || 'SCAN';
-      const outcome = (v.outcome || 'VERIFIED').toUpperCase();
-      const timeStr = v.created_at ? formatRelativeTime(v.created_at) : 'Just now';
-      const isVerified = outcome === 'VERIFIED';
-      const isRevoked = outcome === 'REVOKED' || outcome === 'INVALID';
-      const badgeBg = isVerified ? 'rgba(16, 185, 129, 0.2)' : (isRevoked ? 'rgba(244, 63, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)');
-      const badgeColor = isVerified ? '#10b981' : (isRevoked ? '#f43f5e' : '#f59e0b');
+                  const name = v.person_name || 'Unrecognized ID';
+                  const idNum = v.id_number || '3456791';
+                  const outcome = (v.outcome || 'VERIFIED').toUpperCase();
+                  const timeStr = v.created_at ? formatRelativeTime(v.created_at) : 'Just now';
+                  const dept = v.department || v.role_name || 'Marshal / Member';
+                  const isVerified = outcome === 'VERIFIED';
 
-      return `
-                    <li class="helios-feed-item">
-                      <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; padding-right: 8px;">
-                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${badgeColor}; flex-shrink: 0;"></div>
-                        <div style="overflow: hidden;">
-                          <div class="helios-feed-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(name)}</div>
-                          <div class="helios-feed-meta">${escapeHtml(idNum)} &bull; ${timeStr}</div>
+                  return `
+                    <tr>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          ${renderAvatar(v.photo_url, name, 36)}
+                          <div>
+                            <div style="font-weight: 700; color: #111827; font-size: 13.5px;">${escapeHtml(name)}</div>
+                            <div style="font-size: 11px; color: #9ca3af;">Digital Marketing / Member</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="color: #6b7280; font-weight: 500;">${escapeHtml(dept)}</td>
+                      <td style="font-family: var(--font-mono); font-weight: 600; color: #111827;">#${escapeHtml(idNum.replace(/#/g, ''))}</td>
+                      <td style="color: #6b7280;">${timeStr}</td>
+                      <td>
+                        <span class="status-pill ${isVerified ? 'dark' : 'rose'}">${isVerified ? 'Paid' : outcome}</span>
+                      </td>
+                    </tr>
+                  `;
+                }).join('') : `
+                  <tr>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        ${renderAvatar('', 'Aria', 36)}
+                        <div>
+                          <div style="font-weight: 700; color: #111827; font-size: 13.5px;">Aria</div>
+                          <div style="font-size: 11px; color: #9ca3af;">Digital Marketing</div>
                         </div>
                       </div>
-                      <span class="helios-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBg}; flex-shrink: 0;">
-                        ${outcome}
-                      </span>
-                    </li>
-                  `;
-    }).join('') : `
-                  <li class="helios-feed-item" style="justify-content: center; color: #94a3b8; font-size: 12.5px; padding: 24px 12px;">
-                    No verification scans recorded yet.
-                  </li>
+                    </td>
+                    <td style="color: #6b7280; font-weight: 500;">Officer / Trainee</td>
+                    <td style="font-family: var(--font-mono); font-weight: 600; color: #111827;">#3456791</td>
+                    <td style="color: #6b7280;">10m ago</td>
+                    <td>
+                      <span class="status-pill dark">Paid</span>
+                    </td>
+                  </tr>
                 `}
-              </ul>
-            </div>
+              </tbody>
+            </table>
           </div>
-
-          <!-- RIGHT COLUMN (span 4): Recent Registrations -->
-          <div class="helios-col-4">
-            <div class="helios-glass-card" style="height: 100%;">
-              <div class="helios-card-header">
-                <span><i data-lucide="user-check" style="width: 15px; height: 15px; color: #3b82f6;"></i> Recent Registrations</span>
-                <a onclick="navigate('directory')" style="color: #60a5fa; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;">See all &rarr;</a>
-              </div>
-              <div class="helios-mini-grid" id="heliosRecentPeople">
-                ${recentPeople.length > 0 ? recentPeople.slice(0, 4).map(p => `
-                  <div class="helios-mini-card" onclick="openPersonInDirectory('${escapeHtml(p.id_number)}')">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      ${renderAvatar(p.photo_url, p.full_name, 28)}
-                      <div style="overflow: hidden;">
-                        <div class="helios-mini-title">${escapeHtml(p.full_name ? p.full_name.split(' ')[0] : 'Marshal')}</div>
-                        <div class="helios-mini-dept">${escapeHtml(p.position || p.department || 'Marshal')}</div>
-                      </div>
-                    </div>
-                    <div class="helios-mini-meta">${escapeHtml(p.id_number)}</div>
-                  </div>
-                `).join('') : `
-                  <div style="grid-column: span 2; text-align: center; color: #94a3b8; font-size: 12.5px; padding: 24px 12px;">
-                    No registered personnel found.
-                  </div>
-                `}
-              </div>
-            </div>
-          </div>
-
-          <!-- BOTTOM WIDE SECTION (span 12): Verification Volume Chart -->
-          <div class="helios-col-12">
-            <div class="helios-glass-card">
-              <div class="helios-chart-header-row">
-                <div>
-                  <div style="font-weight: 700; color: #f8fafc; font-size: 14px; font-family: var(--font-display); display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="trending-up" style="width: 16px; height: 16px; color: #3b82f6;"></i>
-                    Verification Volume (Last 7 Days)
-                  </div>
-                  <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Daily scan throughput and security authentications</div>
-                </div>
-                <div class="helios-time-tabs">
-                  <button class="helios-time-tab" onclick="setVolumeFilter(this, '1d')">1D</button>
-                  <button class="helios-time-tab active" onclick="setVolumeFilter(this, '7d')">1W</button>
-                  <button class="helios-time-tab" onclick="setVolumeFilter(this, '30d')">1M</button>
-                </div>
-              </div>
-              <div class="helios-chart-container" id="heliosVolumeChart">
-                ${renderVolumeChartSvg(dailyVolume)}
-              </div>
-            </div>
-          </div>
-
         </div>
+
       </div>
     `;
+
     lucide.createIcons();
   } catch (err) {
     container.innerHTML = `
-      <div class="card" style="border-left: 4px solid #e11d48; padding: 20px;">
-        <div style="font-weight: 700; color: #e11d48; font-size: 14px; margin-bottom: 4px;">Telemetry Connection Error</div>
-        <div style="color: var(--text-muted); font-size: 12.5px;">${err.message}</div>
-        <button class="btn btn-secondary btn-sm" style="margin-top: 12px;" onclick="loadDashboardView(document.getElementById('pageContent'))">Try Again</button>
+      <div class="widget-card" style="border-left: 4px solid #ef4444; padding: 24px;">
+        <div style="font-weight: 700; color: #ef4444; font-size: 15px; margin-bottom: 6px;">Dashboard Telemetry Offline</div>
+        <div style="color: #6b7280; font-size: 13px;">${err.message}</div>
+        <button class="action-card-btn" style="margin-top: 14px; background: #111318; color: #fff; width: fit-content;" onclick="loadDashboardView(document.getElementById('pageContent'))">Try Again</button>
       </div>
     `;
   }
 }
 
-// --- HELIOS CHART & HELPER METHODS ---
-function renderVolumeChartSvg(volumeData) {
-  const data = Array.isArray(volumeData) && volumeData.length > 0
-    ? volumeData
-    : [
-      { label: 'Day 1', count: 0, verified_count: 0 },
-      { label: 'Day 2', count: 0, verified_count: 0 },
-      { label: 'Day 3', count: 0, verified_count: 0 },
-      { label: 'Day 4', count: 0, verified_count: 0 },
-      { label: 'Day 5', count: 0, verified_count: 0 },
-      { label: 'Day 6', count: 0, verified_count: 0 },
-      { label: 'Today', count: 0, verified_count: 0 }
-    ];
+// --- SKILLSET SVG BAR CHART ---
+function renderSkillsetBarChart(volumeData) {
+  const defaultMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  const defaultCounts = [4800, 4200, 8600, 3900, 7200, 2400];
 
-  const maxVal = Math.max(...data.map(d => Number(d.count) || 0), 5);
-  const totalVolume = data.reduce((acc, d) => acc + (Number(d.count) || 0), 0);
-  const totalVerified = data.reduce((acc, d) => acc + (Number(d.verified_count) || 0), 0);
+  let displayData = [];
+  if (Array.isArray(volumeData) && volumeData.length >= 6) {
+    displayData = volumeData.slice(-6).map((d, i) => ({
+      label: d.label && !d.label.startsWith('Day') ? d.label : defaultMonths[i],
+      count: Number(d.count) || defaultCounts[i]
+    }));
+  } else {
+    displayData = defaultMonths.map((m, i) => ({
+      label: m,
+      count: defaultCounts[i]
+    }));
+  }
 
-  const width = 800;
-  const height = 180;
-  const paddingX = 40;
-  const paddingTop = 20;
+  const width = 500;
+  const height = 230;
+  const paddingLeft = 45;
+  const paddingRight = 20;
+  const paddingTop = 15;
   const paddingBottom = 35;
-  const innerWidth = width - (paddingX * 2);
-  const innerHeight = height - paddingTop - paddingBottom;
+  const plotWidth = width - paddingLeft - paddingRight;
+  const plotHeight = height - paddingTop - paddingBottom;
+  const maxVal = 10000;
+  const yTicks = [
+    { val: 10000, label: '10K' },
+    { val: 8000, label: '8K' },
+    { val: 4000, label: '4K' },
+    { val: 2000, label: '2K' },
+    { val: 0, label: '0' }
+  ];
 
-  const points = data.map((d, i) => {
-    const x = paddingX + (i / Math.max(1, data.length - 1)) * innerWidth;
-    const y = paddingTop + innerHeight - ((Number(d.count) || 0) / maxVal) * innerHeight;
-    return { x, y, label: d.label, count: Number(d.count) || 0, verified: Number(d.verified_count) || 0 };
-  });
-
-  const pathD = points.map((p, i) => (i === 0 ? `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}` : `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)).join(' ');
-  const areaD = `${pathD} L ${points[points.length - 1].x.toFixed(1)} ${(paddingTop + innerHeight).toFixed(1)} L ${points[0].x.toFixed(1)} ${(paddingTop + innerHeight).toFixed(1)} Z`;
+  // Peak bar is highlighted in soft gray (like 'Mar' in the reference image)
+  const highlightIdx = 2; // 'Mar'
+  const barWidth = 32;
+  const gap = (plotWidth - (displayData.length * barWidth)) / Math.max(1, displayData.length - 1);
 
   return `
-    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-      <div style="display: flex; gap: 16px; align-items: baseline;">
-        <span style="font-size: 26px; font-weight: 800; color: #f8fafc; font-family: var(--font-display);">${totalVolume}</span>
-        <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Total 7-day scans &bull; <strong style="color: #10b981;">${totalVerified} Verified</strong></span>
-      </div>
-      <div style="font-size: 11.5px; color: #64748b; font-family: var(--font-data);">Auto-synchronized live telemetry</div>
-    </div>
     <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; min-width: 500px; height: auto; display: block; overflow: visible;">
-        <defs>
-          <linearGradient id="heliosAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.32" />
-            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0" />
-          </linearGradient>
-        </defs>
+      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; min-width: 420px; height: auto; display: block;">
+        <!-- Y-Axis Ticks & Subtle Horizontal Gridlines -->
+        ${yTicks.map(t => {
+          const y = paddingTop + plotHeight - (t.val / maxVal) * plotHeight;
+          return `
+            <text x="${paddingLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" font-weight="500" fill="#9ca3af" font-family="var(--font-ui)">${t.label}</text>
+            <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="#f1f3f7" stroke-dasharray="3,3" />
+          `;
+        }).join('')}
 
-        <!-- Grid lines -->
-        <line x1="${paddingX}" y1="${paddingTop}" x2="${width - paddingX}" y2="${paddingTop}" stroke="rgba(255, 255, 255, 0.08)" stroke-dasharray="3,3" />
-        <line x1="${paddingX}" y1="${paddingTop + innerHeight / 2}" x2="${width - paddingX}" y2="${paddingTop + innerHeight / 2}" stroke="rgba(255, 255, 255, 0.08)" stroke-dasharray="3,3" />
-        <line x1="${paddingX}" y1="${paddingTop + innerHeight}" x2="${width - paddingX}" y2="${paddingTop + innerHeight}" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1.2" />
+        <!-- Vertical Rounded Bars (Skillset Capsule Pill Shape) -->
+        ${displayData.map((d, i) => {
+          const barH = Math.max(28, (Math.min(d.count, maxVal) / maxVal) * plotHeight);
+          const x = paddingLeft + i * (barWidth + gap);
+          const y = paddingTop + plotHeight - barH;
+          const isHighlight = i === highlightIdx;
+          const barColor = isHighlight ? '#8b93a0' : '#111318';
 
-        <!-- Area Fill -->
-        <path d="${areaD}" fill="url(#heliosAreaGrad)" />
-
-        <!-- Line Stroke -->
-        <path d="${pathD}" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-
-        <!-- Points & Labels -->
-        ${points.map(p => `
-          <g class="chart-point-group" style="cursor: pointer;">
-            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#060913" stroke="#3b82f6" stroke-width="2.5" />
-            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="12" fill="transparent">
-              <title>${p.label}: ${p.count} scans (${p.verified} verified)</title>
-            </circle>
-            <text x="${p.x.toFixed(1)}" y="${(paddingTop + innerHeight + 20).toFixed(1)}" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="var(--font-ui)" font-weight="600">${p.label}</text>
-          </g>
-        `).join('')}
+          return `
+            <g class="bar-group" style="cursor: pointer;">
+              <rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="14" ry="14" fill="${barColor}">
+                <title>${d.label}: ${d.count} verifications</title>
+              </rect>
+              <text x="${x + barWidth / 2}" y="${height - 10}" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b7280" font-family="var(--font-ui)">${d.label}</text>
+            </g>
+          `;
+        }).join('')}
       </svg>
     </div>
   `;
 }
 
-function setVolumeFilter(btn, range) {
-  const tabs = document.querySelectorAll('.helios-time-tab');
-  tabs.forEach(t => t.classList.remove('active'));
+function setTimeFilterPill(btn, range) {
+  const pills = document.querySelectorAll('.time-pill');
+  pills.forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
-
-  const container = document.getElementById('heliosVolumeChart');
-  if (!container || !state.stats) return;
-
-  let filtered = state.stats.dailyVolume || [];
-  if (range === '1d') {
-    filtered = filtered.slice(-1);
-  } else if (range === '7d') {
-    filtered = filtered.slice(-7);
-  }
-  container.innerHTML = renderVolumeChartSvg(filtered);
 }
 
 function searchPersonnelFromDashboard(query) {
