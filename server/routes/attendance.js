@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { optionalAuth, authenticate } = require('../middleware/auth');
+const { invalidateDashboardCache } = require('./dashboard');
 
 // Auto-ensure attendance tables exist in PostgreSQL
 async function ensureAttendanceTables() {
@@ -58,6 +59,7 @@ router.post('/sessions', optionalAuth, async (req, res) => {
       [event_name.trim(), created_by, orgId]
     );
 
+    invalidateDashboardCache(orgId);
     res.status(201).json({ success: true, session: newSession.rows[0] });
   } catch (err) {
     console.error('Start session error:', err);
@@ -87,6 +89,7 @@ router.get('/sessions/active', optionalAuth, async (req, res) => {
 router.post('/sessions/close', optionalAuth, async (req, res) => {
   try {
     await db.query(`UPDATE attendance_sessions SET is_active = false WHERE is_active = true`);
+    invalidateDashboardCache();
     res.json({ success: true, message: "Active session closed successfully." });
   } catch (err) {
     console.error('Close session error:', err);
@@ -144,6 +147,7 @@ router.post('/check-in', optionalAuth, async (req, res) => {
       [sessionId, identity_id, eventName, scanned_by, orgId]
     );
 
+    invalidateDashboardCache(orgId);
     res.status(200).json({
       success: true,
       message: `Marked present for "${eventName}".`,

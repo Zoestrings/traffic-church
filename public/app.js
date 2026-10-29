@@ -84,7 +84,7 @@ function renderAvatar(photoUrl, name, size = 36) {
     const escapedName = (name || 'Personnel').replace(/"/g, '&quot;');
     const jsEscapedName = (name || 'Personnel').replace(/'/g, "\\'");
     return `
-      <img src="${photoUrl}" alt="${escapedName}" class="avatar-img" style="width: ${size}px; height: ${size}px; object-fit: cover;" onerror="this.outerHTML=renderInitialsAvatar('${jsEscapedName}', ${size})" />
+      <img src="${photoUrl}" alt="${escapedName}" loading="lazy" width="${size}" height="${size}" class="avatar-img" style="width: ${size}px; height: ${size}px; object-fit: cover;" onerror="this.outerHTML=renderInitialsAvatar('${jsEscapedName}', ${size})" />
     `;
   }
   return renderInitialsAvatar(name, size);
@@ -559,10 +559,63 @@ function renderCurrentRoute() {
 
 // --- 3. DASHBOARD VIEW (HELIOS COMMAND CENTRE ADAPTATION) ---
 async function loadDashboardView(container) {
+  // Glassmorphic shimmer skeleton placeholder during initial fetch
   container.innerHTML = `
-    <div id="dashboardLoader" style="padding: 60px 20px; text-align: center; color: var(--text-muted); font-family: var(--font-display);">
-      <div style="display: inline-block; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;"></div>
-      <div style="font-size: 13px; font-weight: 500;">Connecting to cloud identity telemetry...</div>
+    <div class="helios-dashboard" id="dashboardLoader">
+      <!-- HEADER SKELETON -->
+      <header class="helios-header">
+        <div>
+          <div class="skeleton" style="width: 240px; height: 32px; margin-bottom: 8px;"></div>
+          <div class="skeleton" style="width: 290px; height: 16px;"></div>
+        </div>
+        <div class="helios-header-actions">
+          <div class="skeleton" style="width: 80px; height: 34px; border-radius: 20px;"></div>
+          <div class="skeleton" style="width: 80px; height: 34px; border-radius: 20px;"></div>
+          <div class="skeleton" style="width: 210px; height: 34px; border-radius: 20px;"></div>
+        </div>
+      </header>
+
+      <!-- 12-COLUMN GRID SKELETON -->
+      <div class="helios-grid">
+        <div class="helios-col-4">
+          <div class="helios-glass-card" style="min-height: 140px;">
+            <div class="skeleton" style="width: 50%; height: 16px; margin-bottom: 12px;"></div>
+            <div class="skeleton" style="width: 40%; height: 44px; margin-bottom: 10px;"></div>
+            <div class="skeleton" style="width: 70%; height: 14px;"></div>
+          </div>
+          <div class="helios-glass-card" style="min-height: 140px;">
+            <div class="skeleton" style="width: 45%; height: 16px; margin-bottom: 12px;"></div>
+            <div class="skeleton" style="width: 60%; height: 22px; margin-bottom: 12px;"></div>
+            <div class="skeleton" style="width: 100%; height: 36px; border-radius: 8px;"></div>
+          </div>
+        </div>
+        <div class="helios-col-4">
+          <div class="helios-glass-card" style="min-height: 300px;">
+            <div class="skeleton" style="width: 50%; height: 16px; margin-bottom: 16px;"></div>
+            <div class="skeleton" style="width: 100%; height: 44px; margin-bottom: 10px; border-radius: 10px;"></div>
+            <div class="skeleton" style="width: 100%; height: 44px; margin-bottom: 10px; border-radius: 10px;"></div>
+            <div class="skeleton" style="width: 100%; height: 44px; margin-bottom: 10px; border-radius: 10px;"></div>
+            <div class="skeleton" style="width: 100%; height: 44px; border-radius: 10px;"></div>
+          </div>
+        </div>
+        <div class="helios-col-4">
+          <div class="helios-glass-card" style="min-height: 300px;">
+            <div class="skeleton" style="width: 50%; height: 16px; margin-bottom: 16px;"></div>
+            <div class="helios-mini-grid">
+              <div class="skeleton" style="height: 82px; border-radius: 12px;"></div>
+              <div class="skeleton" style="height: 82px; border-radius: 12px;"></div>
+              <div class="skeleton" style="height: 82px; border-radius: 12px;"></div>
+              <div class="skeleton" style="height: 82px; border-radius: 12px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="helios-col-12">
+          <div class="helios-glass-card" style="min-height: 220px;">
+            <div class="skeleton" style="width: 35%; height: 18px; margin-bottom: 16px;"></div>
+            <div class="skeleton" style="width: 100%; height: 140px; border-radius: 10px;"></div>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 
@@ -592,7 +645,7 @@ async function loadDashboardView(container) {
             <button class="helios-pill-btn" onclick="navigate('history')">Operations</button>
             <div class="helios-search">
               <i data-lucide="search"></i>
-              <input type="text" id="heliosSearchInput" placeholder="Search personnel..." onkeydown="if(event.key==='Enter') searchPersonnelFromDashboard(this.value)" />
+              <input type="text" id="heliosSearchInput" placeholder="Search personnel..." oninput="handleDashboardSearchInput(event)" onkeydown="if(event.key==='Enter') searchPersonnelFromDashboard(this.value)" />
             </div>
           </div>
         </header>
@@ -864,6 +917,17 @@ function searchPersonnelFromDashboard(query) {
       if (btn) btn.click();
     }
   }, 120);
+}
+
+let dashboardSearchTimeout = null;
+function handleDashboardSearchInput(e) {
+  clearTimeout(dashboardSearchTimeout);
+  const q = (e.target.value || '').trim();
+  if (q.length >= 2) {
+    dashboardSearchTimeout = setTimeout(() => {
+      searchPersonnelFromDashboard(q);
+    }, 300);
+  }
 }
 
 function openPersonInDirectory(idNumber) {
@@ -1397,6 +1461,15 @@ async function loadDirectoryView(container) {
       directoryPage = 1;
       fetchDirectoryList();
     }
+  });
+
+  let directoryDebounce = null;
+  document.getElementById('directorySearchInput').addEventListener('input', () => {
+    clearTimeout(directoryDebounce);
+    directoryDebounce = setTimeout(() => {
+      directoryPage = 1;
+      fetchDirectoryList();
+    }, 300);
   });
 
   fetchDirectoryList();

@@ -3,10 +3,66 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
 
+// In-memory cache keyed by organisation_id (TTL: 2 minutes for full stats, 5 minutes for chart)
+const statsCache = new Map();
+const chartCache = new Map();
+const STATS_CACHE_TTL = 2 * 60 * 1000;  // 2 minutes
+const CHART_CACHE_TTL = 5 * 60 * 1000;  // 5 minutes
+
+function invalidateDashboardCache(orgId) {
+  if (orgId) {
+    statsCache.delete(orgId);
+    chartCache.delete(orgId);
+  } else {
+    statsCache.clear();
+    chartCache.clear();
+  }
+}
+
+// GET /api/dashboard/chart-data - 7-day timeline volume (5-minute cache)
+router.get('/chart-data', authenticate, async (req, res) => {
+  try {
+    const orgId = req.organisation.id;
+    const now = Date.now();
+    const cached = chartCache.get(orgId);
+
+    if (cached && (now - cached.timestamp < CHART_CACHE_TTL) && req.query.refresh !== '1') {
+      return res.json(cached.data);
+    }
+
+    const dailyScansRes = await db.query(`
+      SELECT 
+        TO_CHAR(d.day, 'Mon DD') as label,
+        d.day::date as date,
+        COUNT(ve.id)::int as count,
+        COUNT(ve.id) FILTER (WHERE ve.outcome = 'verified')::int as verified_count
+      FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day'::interval) d(day)
+      LEFT JOIN verification_events ve 
+        ON DATE(ve.created_at) = d.day::date AND ve.organisation_id = $1
+      GROUP BY d.day
+      ORDER BY d.day ASC
+    `, [orgId]).catch(() => ({ rows: [] }));
+
+    const chartData = dailyScansRes.rows || [];
+    chartCache.set(orgId, { data: chartData, timestamp: now });
+
+    return res.json(chartData);
+  } catch (err) {
+    console.error('Chart data error:', err);
+    return res.status(500).json({ error: 'Failed to retrieve chart telemetry.' });
+  }
+});
+
 // GET /api/dashboard/stats
 router.get('/stats', authenticate, async (req, res) => {
   try {
     const orgId = req.organisation.id;
+    const now = Date.now();
+    const cached = statsCache.get(orgId);
+
+    if (cached && (now - cached.timestamp < STATS_CACHE_TTL) && req.query.refresh !== '1') {
+      return res.json(cached.data);
+    }
 
     // 1. Identity breakdown
     const idStatsRes = await db.query(`
@@ -92,7 +148,7 @@ router.get('/stats', authenticate, async (req, res) => {
     const cardStats = cardStatsRes.rows[0] || {};
     const verifStats = verifStatsRes.rows[0] || {};
 
-    return res.json({
+    const responseData = {
       metrics: {
         totalIdentities: parseInt(idStats.total_identities || 0, 10),
         activeIdentities: parseInt(idStats.active_identities || 0, 10),
@@ -109,7 +165,13 @@ router.get('/stats', authenticate, async (req, res) => {
       dailyVolume: dailyScansRes.rows || [],
       recentVerifications: recentVerifsRes.rows || [],
       recentPeople: recentPeopleRes.rows || []
-    });
+    };
+
+    // Store in cache
+    statsCache.set(orgId, { data: responseData, timestamp: now });
+    chartCache.set(orgId, { data: responseData.dailyVolume, timestamp: now });
+
+    return res.json(responseData);
   } catch (err) {
     console.error('Dashboard stats error:', err);
     return res.status(500).json({ error: 'Failed to retrieve dashboard metrics.' });
@@ -117,3 +179,4 @@ router.get('/stats', authenticate, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.invalidateDashboardCache = invalidateDashboardCache;

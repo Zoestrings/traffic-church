@@ -13,6 +13,7 @@
     "@neon/config": "^1.9.4",
     "@neon/env": "^1.6.5",
     "bcryptjs": "^3.0.3",
+    "compression": "^1.7.5",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
