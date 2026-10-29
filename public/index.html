@@ -7,30 +7,43 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/style.css">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest" defer></script>
   <!-- HTML5-QRCode Scanner -->
   <script src="https://unpkg.com/html5-qrcode" defer></script>
   <style>
     :root {
+      /* Helios Dark Glassmorphism Palette */
+      --bg-body: #05080f;
+      --bg-glass: rgba(17, 24, 39, 0.75);
+      --border-glass: rgba(255, 255, 255, 0.08);
+      --accent-gold: #d4af37;
+      --accent-green: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-blue: #3b82f6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+
       /* Refined Canvas & Panel Palette */
-      --bg-main: #f8fafc;
+      --bg-main: #05080f;
       --bg-sidebar: #090e1a;
       --bg-sidebar-dark: #060a12;
-      --bg-panel: #ffffff;
-      --bg-subtle: #f1f5f9;
-      --bg-hover: #f8fafc;
+      --bg-panel: rgba(17, 24, 39, 0.75);
+      --bg-subtle: rgba(255, 255, 255, 0.04);
+      --bg-hover: rgba(255, 255, 255, 0.06);
       
       /* Subtle Architectural Borders */
-      --border-color: #e2e8f0;
-      --border-subtle: #f1f5f9;
-      --border-strong: #cbd5e1;
-      --border-dark: #1e293b;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      --border-dark: rgba(255, 255, 255, 0.1);
 
       /* Typography */
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --text-subtle: #94a3b8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
       --text-sidebar: #94a3b8;
       --text-sidebar-active: #ffffff;
 
@@ -93,15 +106,29 @@
     }
 
     body {
-      font-family: var(--font-ui);
-      background: var(--bg-main);
-      color: var(--text-main);
+      background-color: var(--bg-body) !important;
+      color: var(--text-main) !important;
+      font-family: 'Inter', var(--font-ui), sans-serif;
+      margin: 0;
+      background-image: radial-gradient(circle at 50% 0%, rgba(17, 24, 39, 0.8) 0%, transparent 50%);
       font-size: 13.5px;
       line-height: 1.5;
       letter-spacing: -0.01em;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       min-height: 100vh;
+    }
+
+    .dashboard-layout, .app-shell {
+      display: flex !important;
+      min-height: 100vh;
+      background-color: var(--bg-body) !important;
+      color: var(--text-main);
+    }
+
+    .main-content {
+      background-color: var(--bg-body) !important;
+      color: var(--text-main) !important;
     }
 
     /* Print Styles for Physical Badges */
@@ -292,16 +319,16 @@
       flex-direction: column;
       min-width: 0;
       overflow-y: auto;
-      background: var(--bg-main);
+      background: var(--bg-body, #05080f);
     }
 
     /* Frosted Luxury Topbar */
     .topbar {
       height: 58px;
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(9, 13, 22, 0.85);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-glass, rgba(255, 255, 255, 0.08));
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -309,7 +336,7 @@
       position: sticky;
       top: 0;
       z-index: 30;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
     .topbar-left {
@@ -318,6 +345,7 @@
       gap: 12px;
       font-size: 13px;
       font-family: var(--font-display);
+      color: #f8fafc;
     }
 
     .topbar-right {
@@ -348,40 +376,40 @@
     .topbar-search input {
       width: 100%;
       padding: 7px 12px 7px 34px;
-      background: #f1f5f9;
-      border: 1px solid #e2e8f0;
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 20px;
       font-size: 12px;
-      color: #0f172a;
+      color: #f8fafc;
       outline: none;
       transition: all 0.15s ease;
       font-family: var(--font-ui);
     }
 
     .topbar-search input:focus {
-      background: #ffffff;
-      border-color: #059669;
-      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+      background: rgba(26, 36, 56, 0.9);
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
     }
 
     .topbar-notification-btn {
       position: relative;
-      background: transparent;
-      border: none;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       width: 34px;
       height: 34px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #64748b;
+      color: #94a3b8;
       cursor: pointer;
       border-radius: 50%;
       transition: all 0.15s ease;
     }
 
     .topbar-notification-btn:hover {
-      background: #f1f5f9;
-      color: #0f172a;
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
     }
 
     .topbar-notification-dot {
@@ -392,7 +420,7 @@
       height: 7px;
       border-radius: 50%;
       background: #ef4444;
-      border: 1.5px solid #ffffff;
+      border: 1.5px solid #090d16;
     }
 
     .topbar-user-pill {
@@ -400,16 +428,17 @@
       align-items: center;
       gap: 9px;
       padding: 3px 10px 3px 3px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 24px;
       cursor: pointer;
       transition: all 0.15s ease;
+      color: #f8fafc;
     }
 
     .topbar-user-pill:hover {
-      background: #f1f5f9;
-      border-color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
     }
 
     /* ── Attendance Register Bespoke Layout ── */
