@@ -2,17 +2,86 @@
 // APEX ENTERPRISE IDENTITY & QR VERIFICATION SPA
 // ==============================================================================
 
+// --- ROBUST TOKEN EXTRACTION HELPER FOR ALL BROWSERS (iOS / Android / Safari / Chrome) ---
+function extractTokenFromScannedText(text) {
+  if (!text) return '';
+  let str = String(text).trim();
+
+  // If full URL with /verify/ or /p/
+  if (str.includes('/verify/')) {
+    str = str.split('/verify/')[1];
+  } else if (str.includes('/p/')) {
+    str = str.split('/p/')[1];
+  } else if (str.includes('token=')) {
+    const match = str.match(/token=([a-zA-Z0-9_\-]+)/);
+    if (match) return match[1];
+  } else if (str.includes('verify=')) {
+    const match = str.match(/verify=([a-zA-Z0-9_\-]+)/);
+    if (match) return match[1];
+  }
+
+  // Remove queries, hash fragments, trailing slashes, and leading slashes
+  str = str.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '').trim();
+  return str;
+}
+
+function detectVerificationToken() {
+  if (window.__VERIFICATION_TOKEN__) return window.__VERIFICATION_TOKEN__;
+  try {
+    const path = window.location.pathname || '';
+    const hash = window.location.hash || '';
+    const searchParams = new URLSearchParams(window.location.search || '');
+
+    // 1. Query parameters: ?token=... or ?verify=...
+    const qToken = searchParams.get('token') || searchParams.get('verify');
+    if (qToken && qToken.trim().length >= 16) {
+      return extractTokenFromScannedText(decodeURIComponent(qToken));
+    }
+
+    // 2. Path: /verify/:token or /p/:token
+    const pathParts = path.split('/').filter(Boolean);
+    const vIdx = pathParts.findIndex(p => p.toLowerCase() === 'verify' || p.toLowerCase() === 'p');
+    if (vIdx !== -1 && pathParts[vIdx + 1]) {
+      const cleanToken = extractTokenFromScannedText(decodeURIComponent(pathParts[vIdx + 1]));
+      if (cleanToken.length >= 16) {
+        return cleanToken;
+      }
+    }
+
+    // 3. Hash: #/verify/:token or #verify/:token or #p/:token or #/p/:token
+    if (hash) {
+      const cleanHash = hash.replace(/^#\/?/, '');
+      const hashParts = cleanHash.split('/').filter(Boolean);
+      const hIdx = hashParts.findIndex(p => p.toLowerCase() === 'verify' || p.toLowerCase() === 'p');
+      if (hIdx !== -1 && hashParts[hIdx + 1]) {
+        const cleanHashToken = extractTokenFromScannedText(decodeURIComponent(hashParts[hIdx + 1]));
+        if (cleanHashToken.length >= 16) {
+          return cleanHashToken;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error detecting verification token:', e);
+  }
+  return null;
+}
+
+function isVerificationRoute() {
+  if (window.__IS_VERIFICATION_ROUTE__) return true;
+  const path = window.location.pathname || '';
+  const hash = window.location.hash || '';
+  const searchParams = new URLSearchParams(window.location.search || '');
+  if (path.startsWith('/verify') || path.startsWith('/p/')) return true;
+  if (hash.startsWith('#/verify') || hash.startsWith('#verify') || hash.startsWith('#/p/')) return true;
+  if (searchParams.has('verify') || searchParams.has('token')) return true;
+  return !!detectVerificationToken();
+}
+
 // --- INITIAL ROUTING CHECK (Immediate Verification Interceptor) ---
-// This runs synchronously before anything else in the app loads
+// Runs synchronously before any deferred scripts or router checks
 (function checkForVerification() {
-  const path = window.location.pathname;
-  const pathParts = path.split('/').filter(Boolean);
-
-  // Check if current URL is a QR verification route (/verify/:token or /p/:token)
-  if (path.startsWith('/verify/') || path.startsWith('/p/') || (pathParts.length >= 2 && (pathParts[0] === 'verify' || pathParts[0] === 'p'))) {
-    const token = pathParts[pathParts.length - 1];
-
-    // Set global flags so no background or deferred router redirects kick the user to login/dashboard
+  const token = detectVerificationToken();
+  if (token) {
     window.__IS_VERIFICATION_ROUTE__ = true;
     window.__VERIFICATION_TOKEN__ = token;
 
@@ -145,7 +214,7 @@ function handleRouting() {
   const hash = window.location.hash;
 
   // 1. Prevent router from interfering if on verification route
-  if (window.__IS_VERIFICATION_ROUTE__ || path.startsWith('/verify/') || path.startsWith('/p/')) {
+  if (isVerificationRoute()) {
     return;
   }
 
@@ -180,7 +249,7 @@ async function initSession() {
   const pathParts = path.split('/').filter(Boolean);
 
   // If on verification route, do not restore admin session or redirect
-  if (window.__IS_VERIFICATION_ROUTE__ || path.startsWith('/verify/') || path.startsWith('/p/')) {
+  if (isVerificationRoute()) {
     return;
   }
 
@@ -837,8 +906,8 @@ function renderSkillsetBarChart(volumeData) {
   const gap = (plotWidth - (displayData.length * barWidth)) / Math.max(1, displayData.length - 1);
 
   return `
-    <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; min-width: 420px; height: auto; display: block;">
+    <div style="width: 100%; max-width: 100%; overflow: hidden;">
+      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: 100%; height: auto; display: block;">
         <!-- Y-Axis Ticks & Subtle Horizontal Gridlines -->
         ${yTicks.map(t => {
           const y = paddingTop + plotHeight - (t.val / maxVal) * plotHeight;
@@ -1072,10 +1141,10 @@ function loadScannerView(container) {
   manualBtn.addEventListener('click', () => {
     const val = document.getElementById('manualTokenInput').value.trim();
     if (val) {
-      const token = val.includes('/verify/') ? val.split('/verify/')[1].split('/')[0]
-        : val.includes('/p/') ? val.split('/p/')[1].split('/')[0]
-          : val;
-      verifyToken(token);
+      const token = extractTokenFromScannedText(val);
+      if (token) {
+        verifyToken(token);
+      }
     }
   });
 
@@ -1092,9 +1161,7 @@ function loadScannerView(container) {
     try {
       const tempReader = new Html5Qrcode('qrReader');
       const decodedText = await tempReader.scanFile(file, false);
-      const token = decodedText.includes('/verify/') ? decodedText.split('/verify/')[1].split('?')[0].split('#')[0]
-        : decodedText.includes('/p/') ? decodedText.split('/p/')[1].split('?')[0].split('#')[0]
-          : decodedText;
+      const token = extractTokenFromScannedText(decodedText);
       setScannerStatus('LIVE', 'QR code decoded — verifying credential...');
       verifyToken(token);
     } catch (err) {
@@ -1146,9 +1213,28 @@ async function startCameraScanner() {
   if (startBtn) startBtn.style.display = 'none';
   if (stopBtn) stopBtn.style.display = 'inline-flex';
 
+  // Prevent iOS Safari from forcing camera into fullscreen video player
+  if (readerDiv) {
+    const enforceInline = () => {
+      const vid = readerDiv.querySelector('video');
+      if (vid) {
+        vid.setAttribute('playsinline', 'true');
+        vid.setAttribute('webkit-playsinline', 'true');
+        vid.setAttribute('autoplay', 'true');
+        vid.setAttribute('muted', 'true');
+      }
+    };
+    enforceInline();
+    const observer = new MutationObserver(enforceInline);
+    observer.observe(readerDiv, { childList: true, subtree: true });
+  }
+
   const config = {
     fps: 10,
-    qrbox: { width: 220, height: 220 },
+    qrbox: (viewWidth, viewHeight) => {
+      const edge = Math.min(viewWidth, viewHeight);
+      return { width: Math.max(180, Math.floor(edge * 0.72)), height: Math.max(180, Math.floor(edge * 0.72)) };
+    },
     // iOS Safari needs videoConstraints to be minimal — no exact constraints
     videoConstraints: {
       facingMode: { ideal: 'environment' }
@@ -1157,12 +1243,7 @@ async function startCameraScanner() {
 
   const onSuccess = (decodedText) => {
     stopCameraScanner();
-    let token = decodedText;
-    if (decodedText.includes('/verify/')) {
-      token = decodedText.split('/verify/')[1].split('?')[0].split('#')[0];
-    } else if (decodedText.includes('/p/')) {
-      token = decodedText.split('/p/')[1].split('?')[0].split('#')[0];
-    }
+    const token = extractTokenFromScannedText(decodedText);
     verifyToken(token);
   };
 
@@ -1409,13 +1490,15 @@ async function loadDirectoryView(container) {
     <div id="directoryPagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 13px; color: var(--text-muted);"></div>
 
     <!-- Modal for Identity Details & Card Reissue -->
-    <div class="modal-overlay" id="identityModal">
+    <div class="modal-overlay" id="identityModal" style="display: none;">
       <div class="modal-dialog">
         <div class="modal-header">
           <h2 style="font-size: 15px; font-weight: 600;" id="modalPersonName">Identity Record</h2>
           <button onclick="closeIdentityModal()" style="background: none; border: none; font-size: 16px; cursor: pointer;">✕</button>
         </div>
-        <div class="modal-body" id="modalPersonBody"></div>
+        <div class="modal-body" id="modalBody">
+          <div id="modalPersonBody"></div>
+        </div>
         <div class="modal-footer" id="modalPersonFooter"></div>
       </div>
     </div>
@@ -1543,178 +1626,272 @@ function changeDirPage(newPage) {
   fetchDirectoryList();
 }
 
-async function openIdentityModal(personId) {
+async function openIdentityModal(personOrId) {
   const modal = document.getElementById('identityModal');
-  const body = document.getElementById('modalPersonBody');
+  const body = document.getElementById('modalBody') || document.getElementById('modalPersonBody');
   const footer = document.getElementById('modalPersonFooter');
-  modal.classList.add('open');
 
-  body.innerHTML = 'Loading permanent identity and credential history...';
+  if (modal) {
+    modal.classList.add('open');
+    modal.style.display = 'flex';
+  }
 
-  try {
-    const data = await api(`/api/identities/${personId}`);
-    const p = data.identity;
-    const cards = data.cards;
+  if (!personOrId) {
+    console.error("No person data provided to modal");
+    if (body) {
+      body.innerHTML = `<p style="color: red; padding: 20px;">Error: Identity data could not be loaded.</p>`;
+    }
+    return;
+  }
 
-    document.getElementById('modalPersonName').innerText = `${p.title ? p.title + ' ' : ''}${p.full_name} (${p.id_number})`;
+  const personData = (typeof personOrId === 'object' && personOrId !== null) ? personOrId : null;
+  const personId = personData ? (personData.id || personData.identity_id) : personOrId;
 
+  const nameEl = document.getElementById('modalPersonName');
+  if (nameEl) {
+    nameEl.innerText = personData ? `${personData.title ? personData.title + ' ' : ''}${personData.full_name || 'Personnel'} (${personData.id_number || 'ID'})` : 'Identity Record';
+  }
+
+  // Safe avatar URL generator with UI-Avatars fallback
+  const getAvatarUrl = (data) => data.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.full_name || 'Unknown')}&background=0f172a&color=fff`;
+
+  // Render defensive fallback right away if personData was passed
+  if (personData && body) {
     body.innerHTML = `
       <div id="modalProfileView">
-        <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: center;">
-          <img src="${p.photo_url || 'https://via.placeholder.com/100'}" style="width: 72px; height: 72px; border-radius: 6px; object-fit: cover; background: #e2e8f0; border: 2px solid #cbd5e1;" />
+        <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">
+          <img src="${getAvatarUrl(personData)}" alt="Profile" style="width: 72px; height: 72px; border-radius: 12px; object-fit: cover; border: 1px solid #cbd5e1; background: #e2e8f0;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(personData.full_name || 'User')}&background=0f172a&color=fff'" />
           <div>
-            <div style="font-size: 16px; font-weight: 700;">${p.full_name}</div>
-            <div style="font-size: 12px; color: var(--accent-blue); font-weight: 600;">${p.position || 'Member'} &bull; ${p.department || 'General'}</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Branch: <strong>${p.branch || 'Main Sanctuary'}</strong></div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Permanent ID: <code style="font-weight: 700;">${p.id_number}</code> &bull; Status: <span class="badge ${p.status === 'active' ? 'badge-verified' : 'badge-neutral'}">${p.status}</span></div>
+            <h2 style="margin: 0 0 4px 0; font-size: 18px; color: #0f172a; font-weight: 700;">${personData.full_name || 'Unknown Name'}</h2>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">${personData.position || 'Personnel'} &bull; ${personData.department || 'Operations'}</p>
+            <span style="display: inline-block; margin-top: 6px; padding: 3px 8px; background: #ecfdf5; color: #10b981; font-size: 11px; font-weight: bold; border-radius: 4px;">
+              ${(personData.status || 'ACTIVE').toUpperCase()}
+            </span>
           </div>
         </div>
 
-        <div style="margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
-          <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Issued Credentials & Physical Cards (${cards.length})</h3>
-          <div style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;">
-            ${cards.map(c => `
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border-subtle); font-size: 12px;">
-                <div>
-                  <strong>${c.card_number}</strong>
-                  ${c.is_current ? '<span class="badge badge-verified" style="margin-left: 6px;">CURRENT</span>' : ''}
-                  <div style="font-size: 11px; color: var(--text-muted);">Issued: ${c.issue_date?.split('T')[0]} &bull; Token: ${c.verification_token.substring(0, 10)}...</div>
-                  ${c.revocation_reason ? `<div style="font-size: 11px; color: var(--status-revoked);">Reason: ${c.revocation_reason}</div>` : ''}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <div>
+            <label style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Permanent ID</label>
+            <div style="font-family: monospace; font-size: 13px; color: #0f172a; margin-top: 2px; font-weight: 700;">${personData.id_number || 'N/A'}</div>
+          </div>
+          <div>
+            <label style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Department</label>
+            <div style="font-size: 13px; color: #0f172a; margin-top: 2px;">${personData.department || 'N/A'}</div>
+          </div>
+          <div>
+            <label style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Branch</label>
+            <div style="font-size: 13px; color: #0f172a; margin-top: 2px;">${personData.branch || 'N/A'}</div>
+          </div>
+          <div>
+            <label style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Phone</label>
+            <div style="font-size: 13px; color: #0f172a; margin-top: 2px;">${personData.phone || 'N/A'}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (body) {
+    body.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted);">Loading permanent identity and credential history...</div>';
+  }
+
+  if (personId) {
+    try {
+      const data = await api(`/api/identities/${personId}`);
+      const p = data.identity || personData || {};
+      const cards = Array.isArray(data.cards) ? data.cards : [];
+
+      if (nameEl) {
+        nameEl.innerText = `${p.title ? p.title + ' ' : ''}${p.full_name || 'Personnel'} (${p.id_number || ''})`;
+      }
+
+      if (body) {
+        body.innerHTML = `
+          <div id="modalProfileView">
+            <!-- Header section with photo -->
+            <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">
+              <img src="${getAvatarUrl(p)}" alt="Profile" style="width: 72px; height: 72px; border-radius: 12px; object-fit: cover; border: 1px solid #cbd5e1; background: #e2e8f0;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.full_name || 'User')}&background=0f172a&color=fff'" />
+              <div>
+                <h2 style="margin: 0 0 4px 0; font-size: 18px; color: #0f172a; font-weight: 700;">${p.full_name || 'Unknown Name'}</h2>
+                <p style="margin: 0; font-size: 13px; color: #64748b;">${p.position || 'Personnel'} &bull; ${p.department || 'Operations'}</p>
+                <span style="display: inline-block; margin-top: 6px; padding: 3px 8px; background: #ecfdf5; color: #10b981; font-size: 11px; font-weight: bold; border-radius: 4px;">
+                  ${(p.status || 'ACTIVE').toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <!-- Details Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+              <div>
+                <label style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Permanent ID</label>
+                <div style="font-family: monospace; font-size: 13px; color: #0f172a; margin-top: 2px; font-weight: 700;">${p.id_number || 'N/A'}</div>
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Department</label>
+                <div style="font-size: 13px; color: #0f172a; margin-top: 2px;">${p.department || 'N/A'}</div>
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Branch</label>
+                <div style="font-size: 13px; color: #0f172a; margin-top: 2px;">${p.branch || 'N/A'}</div>
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Phone</label>
+                <div style="font-size: 13px; color: #0f172a; margin-top: 2px;">${p.phone || 'N/A'}</div>
+              </div>
+            </div>
+
+            <!-- Cards History -->
+            <div style="margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+              <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Issued Credentials & Physical Cards (${cards.length})</h3>
+              <div style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;">
+                ${cards.length === 0 ? '<div style="font-size: 12px; color: var(--text-muted); padding: 8px 0;">No physical cards issued yet.</div>' : cards.map(c => `
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border-subtle); font-size: 12px;">
+                    <div>
+                      <strong>${c.card_number}</strong>
+                      ${c.is_current ? '<span class="badge badge-verified" style="margin-left: 6px;">CURRENT</span>' : ''}
+                      <div style="font-size: 11px; color: var(--text-muted);">Issued: ${c.issue_date ? c.issue_date.split('T')[0] : 'Indefinite'} &bull; Token: ${(c.verification_token || '').substring(0, 10)}...</div>
+                      ${c.revocation_reason ? `<div style="font-size: 11px; color: var(--status-revoked);">Reason: ${c.revocation_reason}</div>` : ''}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="badge ${c.status === 'active' ? 'badge-verified' : (c.status === 'revoked' ? 'badge-revoked' : 'badge-neutral')}">${c.status}</span>
+                      ${c.status === 'active' && ['super_admin', 'identity_manager'].includes(state.role) ? `
+                        <button class="btn btn-danger btn-sm" onclick="revokeCard(${c.id}, ${p.id})">Revoke</button>
+                      ` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit Personnel Profile Form (Hidden by default) -->
+          <div id="modalProfileEditForm" style="display: none; padding-top: 8px;">
+            <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--accent-blue);">Super Admin: Correct Personnel Profile</h3>
+            <form id="editPersonForm">
+              <div class="form-row">
+                <div style="flex: 1;">
+                  <label class="form-label">Title</label>
+                  <input type="text" id="editTitle" class="form-control" value="${p.title || ''}" />
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span class="badge ${c.status === 'active' ? 'badge-verified' : (c.status === 'revoked' ? 'badge-revoked' : 'badge-neutral')}">${c.status}</span>
-                  ${c.status === 'active' && ['super_admin', 'identity_manager'].includes(state.role) ? `
-                    <button class="btn btn-danger btn-sm" onclick="revokeCard(${c.id}, ${p.id})">Revoke</button>
-                  ` : ''}
+                <div style="flex: 2;">
+                  <label class="form-label">Full Legal Name</label>
+                  <input type="text" id="editFullName" class="form-control" value="${p.full_name || ''}" required />
                 </div>
               </div>
-            `).join('')}
+
+              <div class="form-row" style="margin-top: 10px;">
+                <div style="flex: 1;">
+                  <label class="form-label">Branch / Assembly</label>
+                  <input type="text" id="editBranch" class="form-control" value="${p.branch || 'Main Sanctuary'}" required />
+                </div>
+                <div style="flex: 1;">
+                  <label class="form-label">Department / Unit</label>
+                  <input type="text" id="editDepartment" class="form-control" value="${p.department || ''}" required />
+                </div>
+                <div style="flex: 1;">
+                  <label class="form-label">Rank / Position</label>
+                  <input type="text" id="editPosition" class="form-control" value="${p.position || ''}" />
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-top: 10px;">
+                <div style="flex: 1;">
+                  <label class="form-label">Membership Status</label>
+                  <select id="editStatus" class="form-control">
+                    <option value="active" ${p.status === 'active' ? 'selected' : ''}>Active</option>
+                    <option value="suspended" ${p.status === 'suspended' ? 'selected' : ''}>Suspended</option>
+                    <option value="inactive" ${p.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                  </select>
+                </div>
+                <div style="flex: 1;">
+                  <label class="form-label">Registration Approval</label>
+                  <select id="editApproval" class="form-control">
+                    <option value="approved" ${p.approval_status === 'approved' ? 'selected' : ''}>Approved</option>
+                    <option value="pending" ${p.approval_status === 'pending' ? 'selected' : ''}>Pending Verification</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 10px;">
+                <label class="form-label">Replace Photograph (Optional)</label>
+                <input type="file" id="editPhotoFile" accept="image/*" class="form-control" />
+              </div>
+
+              <div class="form-group" style="margin-top: 10px; background: #fffbeb; padding: 10px; border-radius: 6px; border: 1px solid #fde68a;">
+                <label class="form-label" style="color: #92400e;">Mandatory Reason for Correction / Change *</label>
+                <input type="text" id="editReason" class="form-control" required placeholder="e.g. Corrected surname spelling, transferred to Ikeja Branch" />
+              </div>
+
+              <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEditProfileView(false)">Cancel</button>
+                <button type="submit" id="saveEditBtn" class="btn btn-primary btn-sm">Save & Record Audit Trail</button>
+              </div>
+            </form>
           </div>
-        </div>
-      </div>
-
-      <!-- Edit Personnel Profile Form (Hidden by default) -->
-      <div id="modalProfileEditForm" style="display: none; padding-top: 8px;">
-        <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--accent-blue);">Super Admin: Correct Personnel Profile</h3>
-        <form id="editPersonForm">
-          <div class="form-row">
-            <div style="flex: 1;">
-              <label class="form-label">Title</label>
-              <input type="text" id="editTitle" class="form-control" value="${p.title || ''}" />
-            </div>
-            <div style="flex: 2;">
-              <label class="form-label">Full Legal Name</label>
-              <input type="text" id="editFullName" class="form-control" value="${p.full_name}" required />
-            </div>
-          </div>
-
-          <div class="form-row" style="margin-top: 10px;">
-            <div style="flex: 1;">
-              <label class="form-label">Branch / Assembly</label>
-              <input type="text" id="editBranch" class="form-control" value="${p.branch || 'Main Sanctuary'}" required />
-            </div>
-            <div style="flex: 1;">
-              <label class="form-label">Department / Unit</label>
-              <input type="text" id="editDepartment" class="form-control" value="${p.department || ''}" required />
-            </div>
-            <div style="flex: 1;">
-              <label class="form-label">Rank / Position</label>
-              <input type="text" id="editPosition" class="form-control" value="${p.position || ''}" />
-            </div>
-          </div>
-
-          <div class="form-row" style="margin-top: 10px;">
-            <div style="flex: 1;">
-              <label class="form-label">Membership Status</label>
-              <select id="editStatus" class="form-control">
-                <option value="active" ${p.status === 'active' ? 'selected' : ''}>Active</option>
-                <option value="suspended" ${p.status === 'suspended' ? 'selected' : ''}>Suspended</option>
-                <option value="inactive" ${p.status === 'inactive' ? 'selected' : ''}>Inactive</option>
-              </select>
-            </div>
-            <div style="flex: 1;">
-              <label class="form-label">Registration Approval</label>
-              <select id="editApproval" class="form-control">
-                <option value="approved" ${p.approval_status === 'approved' ? 'selected' : ''}>Approved</option>
-                <option value="pending" ${p.approval_status === 'pending' ? 'selected' : ''}>Pending Verification</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-top: 10px;">
-            <label class="form-label">Replace Photograph (Optional)</label>
-            <input type="file" id="editPhotoFile" accept="image/*" class="form-control" />
-          </div>
-
-          <div class="form-group" style="margin-top: 10px; background: #fffbeb; padding: 10px; border-radius: 6px; border: 1px solid #fde68a;">
-            <label class="form-label" style="color: #92400e;">Mandatory Reason for Correction / Change *</label>
-            <input type="text" id="editReason" class="form-control" required placeholder="e.g. Corrected surname spelling, transferred to Ikeja Branch" />
-          </div>
-
-          <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEditProfileView(false)">Cancel</button>
-            <button type="submit" id="saveEditBtn" class="btn btn-primary btn-sm">Save & Record Audit Trail</button>
-          </div>
-        </form>
-      </div>
-    `;
-
-    footer.innerHTML = `
-      <button class="btn btn-secondary btn-sm" onclick="closeIdentityModal()">Close</button>
-      <button class="btn btn-secondary btn-sm" onclick="navigateToPrintCard(${p.id})">
-        <i data-lucide="printer" style="width: 13px; height: 13px;"></i> Print Badge
-      </button>
-      ${['super_admin', 'identity_manager'].includes(state.role) ? `
-        <button class="btn btn-secondary btn-sm" id="btnToggleEditProfile" onclick="toggleEditProfileView(true)">
-          Edit Personnel Profile
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="reissueCard(${p.id})">
-          Reissue New Card
-        </button>
-      ` : ''}
-    `;
-
-    // Handle Edit Form Submit
-    document.getElementById('editPersonForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const saveBtn = document.getElementById('saveEditBtn');
-      saveBtn.disabled = true;
-      saveBtn.innerText = 'Saving changes...';
-
-      const formData = new FormData();
-      formData.append('title', document.getElementById('editTitle').value);
-      formData.append('fullName', document.getElementById('editFullName').value);
-      formData.append('branch', document.getElementById('editBranch').value);
-      formData.append('department', document.getElementById('editDepartment').value);
-      formData.append('position', document.getElementById('editPosition').value);
-      formData.append('status', document.getElementById('editStatus').value);
-      formData.append('approvalStatus', document.getElementById('editApproval').value);
-      formData.append('reason', document.getElementById('editReason').value);
-
-      const photoInput = document.getElementById('editPhotoFile');
-      if (photoInput && photoInput.files && photoInput.files[0]) {
-        formData.append('photo', photoInput.files[0]);
+        `;
       }
 
-      try {
-        const res = await fetch(`/api/identities/${p.id}`, {
-          method: 'PUT',
-          body: formData
-        });
-        const resData = await res.json();
-        if (!res.ok) throw new Error(resData.error || 'Failed to update profile.');
-
-        alert('Personnel profile corrected successfully! Audit entry recorded.');
-        openIdentityModal(p.id);
-        fetchDirectoryList();
-      } catch (err) {
-        alert('Error updating profile: ' + err.message);
-        saveBtn.disabled = false;
-        saveBtn.innerText = 'Save & Record Audit Trail';
+      if (footer) {
+        footer.innerHTML = `
+          <button class="btn btn-secondary btn-sm" onclick="closeIdentityModal()">Close</button>
+          <button class="btn btn-secondary btn-sm" onclick="navigateToPrintCard(${p.id})">
+            <i data-lucide="printer" style="width: 13px; height: 13px;"></i> Print Badge
+          </button>
+          ${['super_admin', 'identity_manager'].includes(state.role) ? `
+            <button class="btn btn-secondary btn-sm" id="btnToggleEditProfile" onclick="toggleEditProfileView(true)">
+              Edit Personnel Profile
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="reissueCard(${p.id})">
+              Reissue New Card
+            </button>
+          ` : ''}
+        `;
       }
-    });
-  } catch (err) {
-    body.innerHTML = `Error: ${err.message}`;
+
+      // Handle Edit Form Submit
+      document.getElementById('editPersonForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('saveEditBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Saving...';
+
+        const formData = new FormData();
+        formData.append('title', document.getElementById('editTitle').value);
+        formData.append('fullName', document.getElementById('editFullName').value);
+        formData.append('branch', document.getElementById('editBranch').value);
+        formData.append('department', document.getElementById('editDepartment').value);
+        formData.append('position', document.getElementById('editPosition').value);
+        formData.append('status', document.getElementById('editStatus').value);
+        formData.append('approvalStatus', document.getElementById('editApproval').value);
+        formData.append('reason', document.getElementById('editReason').value);
+
+        const photoInput = document.getElementById('editPhotoFile');
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+          formData.append('photo', photoInput.files[0]);
+        }
+
+        try {
+          const res = await fetch(`/api/identities/${p.id}`, {
+            method: 'PUT',
+            body: formData
+          });
+          const resData = await res.json();
+          if (!res.ok) throw new Error(resData.error || 'Failed to update profile.');
+
+          alert('Personnel profile corrected successfully! Audit entry recorded.');
+          openIdentityModal(p.id);
+          fetchDirectoryList();
+        } catch (err) {
+          alert('Error updating profile: ' + err.message);
+          saveBtn.disabled = false;
+          saveBtn.innerText = 'Save & Record Audit Trail';
+        }
+      });
+    } catch (err) {
+      console.error('Error loading identity modal details:', err);
+      if (!personData && body) {
+        body.innerHTML = `<p style="color: red; padding: 20px;">Error: Identity data could not be loaded (${escapeHtml(err.message)}).</p>`;
+      }
+    }
   }
 }
 
@@ -1733,7 +1910,11 @@ function toggleEditProfileView(showEdit) {
 }
 
 function closeIdentityModal() {
-  document.getElementById('identityModal').classList.remove('open');
+  const modal = document.getElementById('identityModal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
 }
 
 function navigateToPrintCard(personId) {
@@ -1781,9 +1962,11 @@ async function reissueCard(personId) {
 // --- REUSABLE CR80 PHYSICAL & DIGITAL ID CARD GENERATOR ---
 function renderCR80CardHtml(p, currentCard, orgName = 'Grace Chapel International') {
   const token = currentCard.verification_token || currentCard.verificationToken;
+  const currentOrigin = typeof window !== 'undefined' && window.location ? window.location.origin : '';
+  const originParam = currentOrigin ? `?origin=${encodeURIComponent(currentOrigin)}` : '';
   const qrUrl = token
-    ? `/api/cards/token/${token}/qr`
-    : (currentCard.id ? `/api/cards/${currentCard.id}/qr` : '/api/cards/1/qr');
+    ? `/api/cards/token/${token}/qr${originParam}`
+    : (currentCard.id ? `/api/cards/${currentCard.id}/qr${originParam}` : `/api/cards/1/qr${originParam}`);
 
   const issueDateStr = currentCard.issue_date || currentCard.issueDate;
   const expiryDateStr = currentCard.expiry_date || currentCard.expiryDate;
@@ -2737,7 +2920,8 @@ function printEnrollmentFlyer() {
 
 // --- 10. PUBLIC SCAN VERIFICATION VIEW WITH TERMINAL OVERLAY ---
 async function renderPublicVerifyView(container, explicitToken) {
-  const token = explicitToken || state.verifyToken || window.__VERIFICATION_TOKEN__ || window.location.pathname.split('/').filter(Boolean).pop();
+  const rawToken = explicitToken || state.verifyToken || window.__VERIFICATION_TOKEN__ || detectVerificationToken() || window.location.pathname.split('/').filter(Boolean).pop();
+  const token = extractTokenFromScannedText(rawToken);
   state.verifyToken = token;
 
   // 1. Initial State: Stark Terminal Overlay + Profile Screen underneath
@@ -2768,7 +2952,7 @@ async function renderPublicVerifyView(container, explicitToken) {
     if (overlayOutcome) {
       overlayOutcome.style.display = 'inline-flex';
       overlayOutcome.className = 'overlay-outcome revoked';
-      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#10007;</span> INVALID VERIFICATION LINK`;
+      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#10007;</span> INVALID VERIFICATION LINK<div style="margin-top: 14px;"><a href="/" style="color: #94a3b8; font-size: 12px; text-decoration: underline;">&larr; Return to Home</a></div>`;
     }
     return;
   }
@@ -2840,7 +3024,7 @@ async function renderPublicVerifyView(container, explicitToken) {
     if (overlayOutcome) {
       overlayOutcome.style.display = 'inline-flex';
       overlayOutcome.className = 'overlay-outcome revoked';
-      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#10007;</span> ${err.message || 'INVALID CREDENTIAL'}`;
+      overlayOutcome.innerHTML = `<span style="font-size: 18px; margin-right: 4px;">&#10007;</span> ${err.message || 'INVALID CREDENTIAL'}<div style="margin-top: 14px;"><a href="/" style="color: #94a3b8; font-size: 12px; text-decoration: underline;">&larr; Return to Home</a></div>`;
     }
   }
 }
@@ -2981,6 +3165,12 @@ async function renderProfilePage(container, data) {
         </div>
       `}
     ` : ''}
+
+    <div style="margin-top: 24px; text-align: center; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+      <a href="/" class="btn" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #94a3b8; font-size: 13px; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+        <span>&larr;</span> Return to Home
+      </a>
+    </div>
   `;
 }
 
@@ -3586,10 +3776,20 @@ function escapeHtml(str) {
 }
 
 // --- Initialize Event Listeners on Load ---
-window.addEventListener('DOMContentLoaded', initSession);
-window.addEventListener('load', handleRouting);
-window.addEventListener('popstate', handleRouting);
+window.addEventListener('DOMContentLoaded', () => {
+  if (isVerificationRoute()) return;
+  initSession();
+});
+window.addEventListener('load', () => {
+  if (isVerificationRoute()) return;
+  handleRouting();
+});
+window.addEventListener('popstate', () => {
+  if (isVerificationRoute()) return;
+  handleRouting();
+});
 window.addEventListener('hashchange', () => {
+  if (isVerificationRoute()) return;
   const hash = window.location.hash.replace('#', '') || 'dashboard';
   if (state.user && state.currentRoute !== hash) {
     state.currentRoute = hash;

@@ -6,13 +6,48 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 
 function getPublicBaseUrl(req) {
+  // 1. Explicit origin query parameter sent from verified client browser
+  if (req && req.query && req.query.origin) {
+    try {
+      const url = new URL(req.query.origin);
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        return url.origin;
+      }
+    } catch (e) { }
+  }
+
+  // 2. Explicit public base URL environment variable
   if (process.env.PUBLIC_BASE_URL && !process.env.PUBLIC_BASE_URL.includes('localhost')) {
     return process.env.PUBLIC_BASE_URL.replace(/\/$/, '');
   }
-  if (req && req.headers && req.headers.host && !req.headers.host.includes('localhost')) {
-    const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : (req.protocol || 'https'));
-    return `${proto}://${req.headers.host}`;
+
+  // 3. Vercel System production / deployment URL
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.replace(/\/$/, '')}`;
   }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/$/, '')}`;
+  }
+
+  // 4. Request headers (with reverse-proxy and multi-hop proto sanitization)
+  if (req && req.headers) {
+    const rawHost = req.headers['x-forwarded-host'] || req.headers.host;
+    if (rawHost) {
+      const host = rawHost.split(',')[0].trim();
+      if (!host.includes('localhost') && !host.startsWith('127.0.0.1')) {
+        let proto = req.headers['x-forwarded-proto']
+          ? req.headers['x-forwarded-proto'].split(',')[0].trim()
+          : (req.secure ? 'https' : 'http');
+
+        if (host.includes('vercel.app') || process.env.VERCEL === '1') {
+          proto = 'https';
+        }
+        return `${proto}://${host}`;
+      }
+    }
+  }
+
+  // 5. Fallback
   return process.env.PUBLIC_BASE_URL ? process.env.PUBLIC_BASE_URL.replace(/\/$/, '') : 'http://localhost:3000';
 }
 
@@ -183,7 +218,7 @@ router.post('/reissue/:identityId', authenticate, requireRole(['super_admin', 'i
   }
 });
 
-// GET /api/cards/:id/qr - High-res PNG QR Code with quiet zone
+// GET /api/cards/:id/qr - High-res PNG QR Code with optimal contrast & quiet zone
 router.get('/:id/qr', async (req, res) => {
   try {
     const { id } = req.params;
@@ -197,13 +232,14 @@ router.get('/:id/qr', async (req, res) => {
     const baseUrl = getPublicBaseUrl(req);
     const verifyUrl = `${baseUrl}/verify/${token}`;
 
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
     res.type('png');
     await qrcode.toFileStream(res, verifyUrl, {
-      width: 340,
-      margin: 3,
-      errorCorrectionLevel: 'H',
+      width: 360,
+      margin: 4,                  // ISO standard 4-module quiet zone for fast camera edge detection
+      errorCorrectionLevel: 'M',  // 15% recovery, larger dots for instant phone camera focus
       color: {
-        dark: '#0b132b',
+        dark: '#000000',          // Pure black for 21:1 maximum optical contrast
         light: '#ffffff'
       }
     });
@@ -226,13 +262,14 @@ router.get('/token/:token/qr', async (req, res) => {
     const baseUrl = getPublicBaseUrl(req);
     const verifyUrl = `${baseUrl}/verify/${token}`;
 
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
     res.type('png');
     await qrcode.toFileStream(res, verifyUrl, {
-      width: 340,
-      margin: 3,
-      errorCorrectionLevel: 'H',
+      width: 360,
+      margin: 4,                  // ISO standard 4-module quiet zone for fast camera edge detection
+      errorCorrectionLevel: 'M',  // 15% recovery, larger dots for instant phone camera focus
       color: {
-        dark: '#0b132b',
+        dark: '#000000',          // Pure black for 21:1 maximum optical contrast
         light: '#ffffff'
       }
     });

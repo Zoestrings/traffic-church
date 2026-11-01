@@ -8,12 +8,48 @@ const multer = require('multer');
 const db = require('../db');
 
 function getPublicBaseUrl(req) {
+  // 1. Explicit origin query parameter sent from verified client browser
+  if (req && req.query && req.query.origin) {
+    try {
+      const url = new URL(req.query.origin);
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        return url.origin;
+      }
+    } catch (e) { }
+  }
+
+  // 2. Explicit public base URL environment variable
   if (process.env.PUBLIC_BASE_URL && !process.env.PUBLIC_BASE_URL.includes('localhost')) {
     return process.env.PUBLIC_BASE_URL.replace(/\/$/, '');
   }
-  if (req && req.headers && req.headers.host && !req.headers.host.includes('localhost')) {
-    return `${req.protocol || 'http'}://${req.headers.host}`;
+
+  // 3. Vercel System production / deployment URL
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.replace(/\/$/, '')}`;
   }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/$/, '')}`;
+  }
+
+  // 4. Request headers (with reverse-proxy and multi-hop proto sanitization)
+  if (req && req.headers) {
+    const rawHost = req.headers['x-forwarded-host'] || req.headers.host;
+    if (rawHost) {
+      const host = rawHost.split(',')[0].trim();
+      if (!host.includes('localhost') && !host.startsWith('127.0.0.1')) {
+        let proto = req.headers['x-forwarded-proto']
+          ? req.headers['x-forwarded-proto'].split(',')[0].trim()
+          : (req.secure ? 'https' : 'http');
+
+        if (host.includes('vercel.app') || process.env.VERCEL === '1') {
+          proto = 'https';
+        }
+        return `${proto}://${host}`;
+      }
+    }
+  }
+
+  // 5. Fallback local network interfaces
   const nets = os.networkInterfaces();
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
@@ -155,14 +191,16 @@ router.get('/people/:id/qr', async (req, res) => {
 
     const token = result.rows[0].profile_token;
     const baseUrl = getPublicBaseUrl(req);
-    const profileUrl = `${baseUrl}/p/${token}`;
+    const profileUrl = `${baseUrl}/verify/${token}`;
 
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
     res.type('png');
     await qrcode.toFileStream(res, profileUrl, {
-      width: 280,
-      margin: 2,
+      width: 360,
+      margin: 4,
+      errorCorrectionLevel: 'M',
       color: {
-        dark: '#0f1e3d',
+        dark: '#000000',
         light: '#ffffff'
       }
     });
