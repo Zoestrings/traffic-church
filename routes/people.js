@@ -193,9 +193,8 @@ router.get('/people/:id/qr', async (req, res) => {
     const baseUrl = getPublicBaseUrl(req);
     const profileUrl = `${baseUrl}/verify/${token}`;
 
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
-    res.type('png');
-    await qrcode.toFileStream(res, profileUrl, {
+    const qrBuffer = await qrcode.toBuffer(profileUrl, {
+      type: 'png',
       width: 360,
       margin: 4,
       errorCorrectionLevel: 'M',
@@ -204,6 +203,11 @@ router.get('/people/:id/qr', async (req, res) => {
         light: '#ffffff'
       }
     });
+
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', qrBuffer.length);
+    return res.send(qrBuffer);
   } catch (err) {
     console.error('Error generating QR code:', err);
     if (!res.headersSent) {

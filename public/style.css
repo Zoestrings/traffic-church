@@ -1246,3 +1246,52 @@ table tr:hover td {
     grid-template-columns: 7fr 5fr !important;
   }
 }
+
+/* ── Mobile and Tablet Adjustments for People Directory & Tables ── */
+@media (max-width: 1024px) {
+  /* Make the search/filter bar stack on smaller screens */
+  .search-filter-bar {
+    display: flex;
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+  .search-filter-bar input, 
+  .search-filter-bar select, 
+  .search-filter-bar button,
+  .search-filter-bar div {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: unset !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Make the table horizontally scrollable so it doesn't break the layout */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .data-table {
+    min-width: 800px !important; /* Forces the table to keep its shape and scroll */
+    width: 100% !important;
+  }
+}
+
+/* Button & Action Styling */
+.btn-inspect {
+  font-family: var(--font-display);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cr80-qr-image {
+  width: 80px;
+  height: 80px;
+  display: block;
+  object-fit: contain;
+}

@@ -232,17 +232,21 @@ router.get('/:id/qr', async (req, res) => {
     const baseUrl = getPublicBaseUrl(req);
     const verifyUrl = `${baseUrl}/verify/${token}`;
 
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
-    res.type('png');
-    await qrcode.toFileStream(res, verifyUrl, {
-      width: 360,
-      margin: 4,                  // ISO standard 4-module quiet zone for fast camera edge detection
-      errorCorrectionLevel: 'M',  // 15% recovery, larger dots for instant phone camera focus
+    const qrBuffer = await qrcode.toBuffer(verifyUrl, {
+      type: 'png',
+      width: 400,
+      margin: 2,
+      errorCorrectionLevel: 'H',
       color: {
-        dark: '#000000',          // Pure black for 21:1 maximum optical contrast
+        dark: '#000000',
         light: '#ffffff'
       }
     });
+
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', qrBuffer.length);
+    return res.send(qrBuffer);
   } catch (err) {
     console.error('Card QR error:', err);
     if (!res.headersSent) {
@@ -262,17 +266,21 @@ router.get('/token/:token/qr', async (req, res) => {
     const baseUrl = getPublicBaseUrl(req);
     const verifyUrl = `${baseUrl}/verify/${token}`;
 
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
-    res.type('png');
-    await qrcode.toFileStream(res, verifyUrl, {
-      width: 360,
-      margin: 4,                  // ISO standard 4-module quiet zone for fast camera edge detection
-      errorCorrectionLevel: 'M',  // 15% recovery, larger dots for instant phone camera focus
+    const qrBuffer = await qrcode.toBuffer(verifyUrl, {
+      type: 'png',
+      width: 400,
+      margin: 2,
+      errorCorrectionLevel: 'H',
       color: {
-        dark: '#000000',          // Pure black for 21:1 maximum optical contrast
+        dark: '#000000',
         light: '#ffffff'
       }
     });
+
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', qrBuffer.length);
+    return res.send(qrBuffer);
   } catch (err) {
     console.error('Token QR error:', err);
     if (!res.headersSent) {

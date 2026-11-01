@@ -83,10 +83,8 @@ router.get('/registration-qr/image', async (req, res) => {
     const baseUrl = getPublicBaseUrl(req);
     const registrationUrl = `${baseUrl}/#register`;
 
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
-    res.type('png');
-    res.setHeader('Content-Disposition', 'inline; filename="GCI_Registration_QR.png"');
-    await QRCode.toFileStream(res, registrationUrl, {
+    const qrBuffer = await QRCode.toBuffer(registrationUrl, {
+      type: 'png',
       width: 800,
       margin: 4,
       errorCorrectionLevel: 'M',
@@ -95,6 +93,12 @@ router.get('/registration-qr/image', async (req, res) => {
         light: '#ffffff'
       }
     });
+
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', qrBuffer.length);
+    res.setHeader('Content-Disposition', 'inline; filename="GCI_Registration_QR.png"');
+    return res.send(qrBuffer);
   } catch (err) {
     console.error('Registration QR stream error:', err);
     if (!res.headersSent) {
