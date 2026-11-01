@@ -2,37 +2,42 @@
 // APEX ENTERPRISE IDENTITY & QR VERIFICATION SPA
 // ==============================================================================
 
-// --- INITIAL ROUTING CHECK (Immediate Verification Interceptor) ---
-// This runs synchronously before anything else in the app loads
-(function checkForVerification() {
+// ==========================================
+// CRITICAL: QR VERIFICATION ROUTE INTERCEPT
+// This must run before any other dashboard logic
+// ==========================================
+(function checkVerificationRoute() {
   const path = window.location.pathname;
-  const pathParts = path.split('/').filter(Boolean);
 
-  // Check if current URL is a QR verification route (/verify/:token or /p/:token)
-  if (path.startsWith('/verify/') || path.startsWith('/p/') || (pathParts.length >= 2 && (pathParts[0] === 'verify' || pathParts[0] === 'p'))) {
-    const token = pathParts[pathParts.length - 1];
+  // Check if current URL is a QR verification route (/verify/... or /p/...)
+  if (path.startsWith('/verify/') || path.startsWith('/p/')) {
+    const token = path.split('/').filter(Boolean).pop();
 
     // Set global flags so no background or deferred router redirects kick the user to login/dashboard
     window.__IS_VERIFICATION_ROUTE__ = true;
     window.__VERIFICATION_TOKEN__ = token;
 
-    function mountVerify() {
-      // Hide any legacy shell elements if present
-      const sidebar = document.querySelector('.sidebar');
-      if (sidebar) sidebar.style.display = 'none';
-      const topbar = document.querySelector('.topbar');
-      if (topbar) topbar.style.display = 'none';
+    function runVerification() {
+      const appContainer = document.getElementById('appRoot') || document.getElementById('app-view') || document.body;
 
-      const root = document.getElementById('appRoot') || document.body;
-      if (root) {
-        renderPublicVerifyView(root, token);
+      // Hide any legacy or mobile shell elements
+      const sidebar = document.querySelector('.sidebar');
+      const navbar = document.querySelector('.navbar, .mobile-bottom-nav, .topbar');
+      if (sidebar) sidebar.style.display = 'none';
+      if (navbar) navbar.style.display = 'none';
+
+      // Call verification rendering function
+      if (typeof renderPublicVerifyView === 'function') {
+        renderPublicVerifyView(appContainer, token);
+      } else {
+        console.error('renderPublicVerifyView function not found!');
       }
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', mountVerify, { once: true });
+      document.addEventListener('DOMContentLoaded', runVerification, { once: true });
     } else {
-      mountVerify();
+      runVerification();
     }
   }
 })();
@@ -246,6 +251,10 @@ function navigate(route) {
 
 // --- Render Engine ---
 function render() {
+  const path = window.location.pathname;
+  if (window.__IS_VERIFICATION_ROUTE__ || path.startsWith('/verify/') || path.startsWith('/p/')) {
+    return;
+  }
   const root = document.getElementById('appRoot');
 
   // 1. Public Verification View (e.g. from mobile QR scan)
@@ -1848,10 +1857,7 @@ function renderCR80CardHtml(p, currentCard, orgName = 'Grace Chapel Internationa
           <div class="cr80-back-body">
             <div class="cr80-qr-block">
               <div class="cr80-qr-wrapper">
-                <img class="cr80-qr-image" 
-                     src="${qrUrl}" 
-                     alt="Verification QR" 
-                     onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(window.location.origin + '/verify/${token || currentCard.id}'); console.error('QR Image failed to load from ' + '${qrUrl}');" />
+                <img class="cr80-qr-image" src="${qrUrl}" alt="Verification QR" />
               </div>
               <span class="cr80-qr-label">SCAN TO VERIFY</span>
             </div>
