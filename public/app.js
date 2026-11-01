@@ -285,18 +285,19 @@ async function initSession() {
 
 
 function toggleMobileSidebar(force) {
-  const sidebar = document.getElementById('appSidebar');
-  const backdrop = document.getElementById('sidebarBackdrop');
+  const sidebar = document.getElementById('appSidebar') || document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop') || document.querySelector('.sidebar-backdrop, .menu-overlay');
   if (!sidebar) return;
-  const isOpen = force !== undefined ? force : !sidebar.classList.contains('open');
+  const isOpen = force !== undefined ? force : (!sidebar.classList.contains('open') && !sidebar.classList.contains('active'));
   if (isOpen) {
-    sidebar.classList.add('open');
+    sidebar.classList.add('open', 'active');
     if (backdrop) backdrop.classList.add('active');
   } else {
-    sidebar.classList.remove('open');
+    sidebar.classList.remove('open', 'active');
     if (backdrop) backdrop.classList.remove('active');
   }
 }
+window.toggleMenu = () => toggleMobileSidebar();
 
 function navigate(route) {
   toggleMobileSidebar(false);
@@ -432,7 +433,7 @@ function renderAppShell(container) {
   container.innerHTML = `
     <div class="app-shell">
       <!-- Mobile Drawer Backdrop -->
-      <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="toggleMobileSidebar(false)"></div>
+      <div id="sidebarBackdrop" class="sidebar-backdrop menu-overlay" onclick="toggleMobileSidebar(false)"></div>
 
       <!-- Sidebar (Desktop Sidebar + Mobile Drawer) -->
       <aside class="sidebar" id="appSidebar">
@@ -442,7 +443,7 @@ function renderAppShell(container) {
             <div class="brand-logo-text">${state.org?.name?.split(' ')[0] || 'Skillset'}</div>
           </div>
           <!-- Close button on Mobile Drawer -->
-          <button class="mobile-close-sidebar-btn" onclick="toggleMobileSidebar(false)" aria-label="Close menu">
+          <button class="mobile-close-sidebar-btn sidebar-close-btn" onclick="toggleMobileSidebar(false)" aria-label="Close menu">
             <i data-lucide="x" style="width: 16px; height: 16px;"></i>
           </button>
         </div>

@@ -81,26 +81,38 @@ html, body {
   background-color: var(--bg-canvas) !important;
 }
 
-/* ── Clean White Minimalist Sidebar ── */
+/* ── Clean White Minimalist Sidebar & Mobile Drawer ── */
 .sidebar {
-  width: 250px;
-  background: var(--bg-sidebar) !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 260px !important;
+  max-width: 80vw;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
   border-right: 1px solid var(--border-subtle) !important;
   display: flex;
   flex-direction: column;
   padding: 24px 16px 20px;
   flex-shrink: 0;
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  transition: transform 0.25s ease;
+  z-index: 9999;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+}
+
+/* When the menu is open */
+.sidebar.open, .sidebar.active, .sidebar.mobile-open {
+  transform: translateX(0) !important;
 }
 
 .sidebar-header {
   padding: 0 8px 24px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
@@ -121,12 +133,12 @@ html, body {
   padding-right: 4px;
 }
 
-.nav-item {
+.nav-item, .sidebar .nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  color: var(--text-muted);
+  padding: 12px 16px;
+  color: #334155;
   text-decoration: none;
   font-size: 13.5px;
   font-weight: 500;
@@ -134,32 +146,52 @@ html, body {
   border-radius: var(--radius-pill);
   transition: all 0.15s ease;
   cursor: pointer;
+  border-bottom: 1px solid #f8fafc;
 }
 
-.nav-item i {
-  width: 17px;
-  height: 17px;
+/* Force icons to be a normal, small size */
+.nav-item svg,
+.nav-item i,
+.nav-item img,
+.sidebar .nav-item svg, 
+.sidebar .nav-item i, 
+.sidebar .nav-item img {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
+  flex-shrink: 0 !important;
   stroke-width: 2;
-  color: var(--text-muted);
+  color: #64748b;
   transition: color 0.15s ease;
 }
 
-.nav-item:hover {
+.sidebar-icon {
+  font-size: 20px !important;
+  width: 20px !important;
+  text-align: center;
+}
+
+.nav-item:hover, .sidebar .nav-item:hover {
   background: var(--bg-hover);
   color: var(--text-dark);
 }
 
-.nav-item:hover i {
+.nav-item:hover svg, .nav-item:hover i,
+.sidebar .nav-item:hover svg, .sidebar .nav-item:hover i {
   color: var(--text-dark);
 }
 
-.nav-item.active {
+.nav-item.active, .sidebar .nav-item.active {
   background: var(--bg-hover);
   color: var(--text-dark);
   font-weight: 700;
 }
 
-.nav-item.active i {
+.nav-item.active svg, .nav-item.active i,
+.sidebar .nav-item.active svg, .sidebar .nav-item.active i {
   color: var(--text-dark);
 }
 
@@ -1036,20 +1068,25 @@ table tr:hover td {
   transform: scale(0.94);
 }
 
-.sidebar-backdrop {
+.sidebar-backdrop,
+.menu-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(17, 19, 24, 0.4);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(17, 19, 24, 0.5);
   backdrop-filter: blur(2px);
-  z-index: 45;
+  z-index: 9998;
 }
 
-.sidebar-backdrop.active {
-  display: block;
+.sidebar-backdrop.active,
+.menu-overlay.active {
+  display: block !important;
 }
 
-.mobile-close-sidebar-btn {
+.mobile-close-sidebar-btn,
+.sidebar-close-btn {
   display: none;
   background: none;
   border: none;
@@ -1059,7 +1096,8 @@ table tr:hover td {
   border-radius: 8px;
 }
 
-.mobile-close-sidebar-btn:hover {
+.mobile-close-sidebar-btn:hover,
+.sidebar-close-btn:hover {
   background: var(--bg-hover);
   color: var(--text-dark);
 }
@@ -1083,18 +1121,27 @@ table tr:hover td {
   }
 
   .sidebar {
-    position: fixed;
-    left: -260px;
-    top: 0;
-    height: 100vh;
-    z-index: 100;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    height: 100vh !important;
+    width: 260px !important;
+    max-width: 80vw !important;
+    background-color: #ffffff !important;
+    z-index: 9999 !important;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15) !important;
+    overflow-y: auto !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease-in-out !important;
   }
-  .sidebar.open, .sidebar.mobile-open {
-    transform: translateX(260px);
+
+  .sidebar.open, .sidebar.active, .sidebar.mobile-open {
+    transform: translateX(0) !important;
   }
-  .mobile-close-sidebar-btn {
-    display: inline-flex;
+
+  .mobile-close-sidebar-btn,
+  .sidebar-close-btn {
+    display: inline-flex !important;
   }
 
   .bottom-nav, .mobile-bottom-nav {
@@ -1135,7 +1182,7 @@ table tr:hover td {
     gap: 16px !important;
   }
 
-  .chart-container, .chart-wrapper, canvas, svg {
+  .chart-container, .chart-wrapper, .chart-container canvas, .chart-container svg, .chart-wrapper svg {
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
@@ -1143,10 +1190,40 @@ table tr:hover td {
   }
 }
 
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 768px) {
   .dashboard-layout, .app-shell {
-    flex-direction: row;
+    flex-direction: row !important;
   }
+
+  .sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    left: auto !important;
+    transform: translateX(0) !important;
+    width: 260px !important;
+    max-width: 260px !important;
+    box-shadow: none !important;
+    border-right: 1px solid #e2e8f0 !important;
+    z-index: 40 !important;
+    display: flex !important;
+  }
+
+  .sidebar-close-btn,
+  .mobile-close-sidebar-btn {
+    display: none !important;
+  }
+
+  .sidebar-backdrop,
+  .menu-overlay {
+    display: none !important;
+  }
+
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
   .main-content {
     padding: 24px 24px 40px !important;
   }
@@ -1157,9 +1234,6 @@ table tr:hover td {
 }
 
 @media (min-width: 1024px) {
-  .dashboard-layout, .app-shell {
-    flex-direction: row;
-  }
   .main-content {
     padding: 24px 32px 40px !important;
   }
