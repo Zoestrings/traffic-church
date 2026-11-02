@@ -114,6 +114,7 @@ router.get('/:token', optionalAuth, async (req, res) => {
     const isOfficer = req.user && req.membership && req.membership.organisation_id === orgId;
 
     const profileData = {
+      status: outcome.toUpperCase(),
       outcome,
       headline,
       message,
