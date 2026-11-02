@@ -933,13 +933,17 @@ table tr:hover td {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(17, 19, 24, 0.45);
+  background: rgba(17, 19, 24, 0.55);
   backdrop-filter: blur(4px);
-  display: flex;
+  display: none !important;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
   padding: 16px;
+}
+
+.modal-overlay.open {
+  display: flex !important;
 }
 
 .modal-dialog {

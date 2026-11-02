@@ -1569,9 +1569,24 @@ async function openIdentityModal(personId) {
   const modal = document.getElementById('identityModal');
   const body = document.getElementById('modalPersonBody');
   const footer = document.getElementById('modalPersonFooter');
+  if (!modal) return;
+
   modal.classList.add('open');
 
-  body.innerHTML = 'Loading permanent identity and credential history...';
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      closeIdentityModal();
+    }
+  };
+
+  if (body) {
+    body.innerHTML = `
+      <div style="padding: 30px; text-align: center; color: var(--text-muted);">
+        <div style="display: inline-block; width: 28px; height: 28px; border: 2px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;"></div>
+        <div style="font-size: 13px; font-weight: 600;">Loading identity and credential history...</div>
+      </div>
+    `;
+  }
 
   try {
     const data = await api(`/api/identities/${personId}`);
@@ -1755,7 +1770,9 @@ function toggleEditProfileView(showEdit) {
 }
 
 function closeIdentityModal() {
-  document.getElementById('identityModal').classList.remove('open');
+  document.querySelectorAll('.modal-overlay, #identityModal').forEach(m => {
+    m.classList.remove('open');
+  });
 }
 
 function navigateToPrintCard(personId) {
