@@ -1434,3 +1434,52 @@ body.is-verification-route {
   color: #64748b;
   letter-spacing: 0.5px;
 }
+
+/* ==============================================================================
+   PUBLIC IDENTITY CARD - CLEAN SINGLE-COLUMN CENTERED RESPONSIVE LAYOUT
+   ============================================================================== */
+.public-profile-screen {
+  min-height: 100vh;
+  background: #090d16 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 24px 16px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+/* Force the public profile to be a clean, centered mobile card */
+.command-profile-card {
+  width: 100% !important;
+  max-width: 480px !important;
+  margin: 20px auto !important; /* Centers it horizontally */
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure the main container doesn't try to use the dashboard grid */
+#app-view, .main-content {
+  display: block !important;
+  padding: 16px !important;
+  width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+/* Fix the internal grid so it doesn't overflow */
+.command-grid-matrix {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+/* Ensure images don't break the layout */
+.command-profile-photo {
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}

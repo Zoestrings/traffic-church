@@ -2891,18 +2891,6 @@ async function renderProfilePage(container, data) {
   const currentUser = (window.state && window.state.user) || data.viewer?.isAuthenticated || (localStorage.getItem('auth_token') ? true : false);
   const identityDbId = p.identityId || p.id || (data.identity ? (data.identity.identityId || data.identity.id) : '');
 
-  // Check if an active attendance session is running
-  let activeSession = null;
-  try {
-    const authH = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
-    const sRes = await fetch('/api/attendance/sessions/active', { headers: authH });
-    if (sRes.ok) {
-      activeSession = await sRes.json();
-    }
-  } catch (e) {
-    // No active session
-  }
-
   container.innerHTML = `
     <div class="command-profile-card">
       <!-- Institutional Top Header -->
@@ -2969,41 +2957,6 @@ async function renderProfilePage(container, data) {
         <span class="font-mono">${new Date(data.timestamp || Date.now()).toLocaleTimeString()} UTC</span>
       </div>
     </div>
-
-    <!-- Attendance Quick Check-In (Visible to Authenticated Admins / Officers) -->
-    ${currentUser ? `
-      ${activeSession ? `
-        <div style="margin-top: 16px; background: #0f172a; border: 1px solid #1e293b; padding: 18px 20px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); text-align: left;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="font-size: 11px; font-weight: 800; color: #10b981; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
-              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
-              ACTIVE ROLL-CALL LIST
-            </div>
-            <span style="font-size: 10.5px; color: #94a3b8; font-family: monospace;">INSTANT SCAN RECORD</span>
-          </div>
-          <div style="font-size: 17px; font-weight: 800; color: #ffffff; margin-bottom: 14px; letter-spacing: -0.01em;">
-            ${escapeHtml(activeSession.event_name)}
-          </div>
-          <button id="btnCheckIn_${identityDbId}" onclick="logAttendance('${identityDbId}', '${escapeHtml(activeSession.event_name)}')" class="btn btn-primary" style="width: 100%; background: #10b981; border-color: #10b981; color: #ffffff; padding: 12px; font-size: 14px; font-weight: 800; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
-            ✓ Mark as Present (${escapeHtml(activeSession.event_name)})
-          </button>
-          <div id="attendanceMsg" style="font-size: 12px; margin-top: 10px; display: none; font-weight: 600; text-align: center;"></div>
-        </div>
-      ` : `
-        <div style="margin-top: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; padding: 14px 16px; border-radius: 8px;">
-          <div style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 8px;">
-            No Active Roll-Call List &bull; Enter Event Name
-          </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="text" id="manualEventName" placeholder="e.g. Sunday Service" style="flex: 1; min-width: 170px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #0f172a; outline: none; background: #ffffff;">
-            <button onclick="logAttendance('${identityDbId}', document.getElementById('manualEventName').value)" class="btn btn-primary" style="background: #1e293b; color: #ffffff; padding: 9px 16px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer;">
-              Mark Present
-            </button>
-          </div>
-          <div id="attendanceMsg" style="font-size: 12px; margin-top: 8px; display: none; font-weight: 600;"></div>
-        </div>
-      `}
-    ` : ''}
   `;
 }
 

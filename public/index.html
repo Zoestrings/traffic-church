@@ -2454,6 +2454,42 @@
       letter-spacing: 0.5px;
     }
 
+    /* Force the public profile to be a clean, centered mobile card */
+    .public-profile-screen {
+      min-height: 100vh;
+      background: #090d16 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: center !important;
+      padding: 24px 16px !important;
+      box-sizing: border-box !important;
+      width: 100% !important;
+      overflow-x: hidden !important;
+    }
+
+    .command-profile-card {
+      width: 100% !important;
+      max-width: 480px !important;
+      margin: 20px auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+    }
+
+    .command-grid-matrix {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 12px !important;
+      width: 100% !important;
+    }
+
+    .command-profile-photo {
+      max-width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
+
     /* ==========================================================================
        RESPONSIVE DESIGN SYSTEM (PC, LAPTOP, TABLET, IPHONE & ANDROID)
        ========================================================================== */
