@@ -2114,13 +2114,21 @@
     /* =====================================================
        TERMINAL AUTHENTICATION TRANSITION OVERLAY
        ===================================================== */
+    body.is-verification-route {
+      background-color: #05080f !important;
+      color: #ffffff !important;
+      min-height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
     #verification-overlay {
       position: fixed;
       inset: 0;
       width: 100vw;
       height: 100vh;
-      background-color: #05080f;
-      z-index: 9999;
+      background-color: #05080f !important;
+      z-index: 99999;
       display: flex;
       justify-content: center;
       align-items: center;

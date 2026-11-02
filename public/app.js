@@ -2,6 +2,19 @@
 // APEX ENTERPRISE IDENTITY & QR VERIFICATION SPA
 // ==============================================================================
 
+// Global State Definition (Must be declared before route intercept)
+var state = {
+  user: null,
+  org: null,
+  role: null,
+  currentRoute: 'dashboard',
+  selectedIdentity: null,
+  html5QrCode: null,
+  stats: null,
+  verifyToken: null
+};
+window.state = state;
+
 // ==========================================
 // CRITICAL: QR VERIFICATION ROUTE INTERCEPT
 // This must run before any other dashboard logic
@@ -16,21 +29,31 @@
     // Set global flags so no background or deferred router redirects kick the user to login/dashboard
     window.__IS_VERIFICATION_ROUTE__ = true;
     window.__VERIFICATION_TOKEN__ = token;
+    state.verifyToken = token;
 
     function runVerification() {
-      const appContainer = document.getElementById('appRoot') || document.getElementById('app-view') || document.body;
+      try {
+        const appContainer = document.getElementById('appRoot') || document.getElementById('app-view') || document.body;
 
-      // Hide any legacy or mobile shell elements
-      const sidebar = document.querySelector('.sidebar');
-      const navbar = document.querySelector('.navbar, .mobile-bottom-nav, .topbar');
-      if (sidebar) sidebar.style.display = 'none';
-      if (navbar) navbar.style.display = 'none';
+        // Hide any legacy or mobile shell elements
+        const sidebar = document.querySelector('.sidebar, #appSidebar');
+        const navbar = document.querySelector('.navbar, .mobile-bottom-nav, .topbar, .mobile-header');
+        if (sidebar) sidebar.style.display = 'none';
+        if (navbar) navbar.style.display = 'none';
 
-      // Call verification rendering function
-      if (typeof renderPublicVerifyView === 'function') {
-        renderPublicVerifyView(appContainer, token);
-      } else {
-        console.error('renderPublicVerifyView function not found!');
+        // Force body to dark theme for verification
+        document.body.classList.add('is-verification-route');
+        document.body.style.setProperty('background-color', '#05080f', 'important');
+        document.body.style.setProperty('color', '#ffffff', 'important');
+
+        // Call verification rendering function
+        if (typeof renderPublicVerifyView === 'function') {
+          renderPublicVerifyView(appContainer, token);
+        } else {
+          console.error('renderPublicVerifyView function not found!');
+        }
+      } catch (err) {
+        console.error('Error during runVerification execution:', err);
       }
     }
 
@@ -41,16 +64,6 @@
     }
   }
 })();
-
-const state = {
-  user: null,
-  org: null,
-  role: null,
-  currentRoute: 'dashboard',
-  selectedIdentity: null,
-  html5QrCode: null,
-  stats: null
-};
 
 // --- Avatar & Visual Utilities ---
 function renderInitialsAvatar(name, size = 36) {
@@ -2875,13 +2888,14 @@ async function renderProfilePage(container, data) {
   const emergencyPhone = p.emergencyContactPhone || p.emergency_contact_phone || '';
   const emergencyName = p.emergencyContactName || p.emergency_contact_name || 'Command';
 
-  const currentUser = state.user || data.viewer?.isAuthenticated || (localStorage.getItem('auth_token') ? true : false);
+  const currentUser = (window.state && window.state.user) || data.viewer?.isAuthenticated || (localStorage.getItem('auth_token') ? true : false);
   const identityDbId = p.identityId || p.id || (data.identity ? (data.identity.identityId || data.identity.id) : '');
 
   // Check if an active attendance session is running
   let activeSession = null;
   try {
-    const sRes = await fetch('/api/attendance/sessions/active', { headers: getAuthHeaders() });
+    const authH = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
+    const sRes = await fetch('/api/attendance/sessions/active', { headers: authH });
     if (sRes.ok) {
       activeSession = await sRes.json();
     }
