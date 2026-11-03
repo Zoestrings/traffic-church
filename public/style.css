@@ -1466,7 +1466,7 @@ body.is-verification-route {
 }
 
 /* Ensure the main container doesn't try to use the dashboard grid */
-#app-view, .main-content {
+.public-profile-screen #app-view, .public-profile-screen .main-content {
   display: block !important;
   padding: 16px !important;
   width: 100% !important;
@@ -1486,4 +1486,352 @@ body.is-verification-route {
   max-width: 100%;
   height: auto;
   object-fit: cover;
+}
+
+/* ==============================================================================
+   SENIOR DEVELOPER UI - STRIPE / LINEAR / APPLE DESIGN ELEVATION
+   ============================================================================== */
+
+/* ── Typography & Global Polish ── */
+:root {
+  --shadow-subtle: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-card-elevated: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+  --shadow-card-hover: 0 12px 28px -4px rgba(15, 23, 42, 0.10), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --shadow-modal-premium: 0 24px 48px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --border-light-glass: rgba(255, 255, 255, 0.08);
+}
+
+/* Tabular numbers for all stats, counts, and IDs */
+.stat-card-value, 
+.cr80-id-badge,
+.tabular-nums,
+.table-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ── Quick Action Launcher Bar ── */
+.quick-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quick-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--text-dark);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.quick-action-btn:hover {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+  color: #0f172a;
+}
+
+.quick-action-btn:active {
+  transform: scale(0.97);
+}
+
+.quick-action-btn.primary {
+  background: #090e1a;
+  color: #ffffff;
+  border-color: #090e1a;
+  box-shadow: 0 4px 14px rgba(9, 14, 26, 0.25);
+}
+
+.quick-action-btn.primary:hover {
+  background: #1e293b;
+  border-color: #1e293b;
+  color: #ffffff;
+}
+
+/* ── Bento Stat Cards Refinement ── */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  box-shadow: var(--shadow-card-elevated) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-card-hover) !important;
+  transform: translateY(-2px);
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.stat-card-dark {
+  background: linear-gradient(135deg, #090e1a 0%, #111827 50%, #1e293b 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 12px 30px -4px rgba(9, 14, 26, 0.45) !important;
+}
+
+.stat-card-dark .stat-card-label {
+  color: #94a3b8 !important;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.stat-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-family: var(--font-display);
+}
+
+.stat-card-value {
+  font-size: 34px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+
+.stat-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+}
+
+.stat-card-badge.positive {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.stat-card-dark .stat-card-badge.positive {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+}
+
+/* ── Glowing Live Pulse Dot ── */
+.status-dot-pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #10b981;
+  animation: pulseRing 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ── Live Attendance Banner Elevation ── */
+.attendance-live-banner {
+  background: linear-gradient(135deg, #090e1a 0%, #0f172a 60%, #1e293b 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 36px -6px rgba(9, 14, 26, 0.35) !important;
+  border-radius: 16px !important;
+  padding: 24px 28px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.attendance-live-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100%;
+  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 70%);
+  pointer-events: none;
+}
+
+.live-event-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* ── Table Sticky Headers & Smooth Rows ── */
+.data-table, .skillset-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table thead th, .skillset-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(248, 250, 252, 0.95) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 12px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.data-table tbody tr, .skillset-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:hover, .skillset-table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+.data-table tbody td, .skillset-table tbody td {
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+/* ── CR80 Physical Card Elevation ── */
+.cr80-card-wrapper {
+  perspective: 1000px;
+}
+
+.cr80-card {
+  border-radius: 10px !important;
+  box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.08) !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.cr80-card:hover {
+  transform: translateY(-4px) rotateX(1.5deg);
+  box-shadow: 0 24px 50px -10px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(15, 23, 42, 0.12) !important;
+}
+
+.cr80-header {
+  background: linear-gradient(135deg, #090e1a 0%, #0f172a 60%, #1e3a8a 100%) !important;
+  border-bottom: 2.5px solid #f59e0b !important;
+  position: relative;
+}
+
+.cr80-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+}
+
+.cr80-header-crest {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%) !important;
+  color: #090e1a !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.4);
+}
+
+.cr80-photo {
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15) !important;
+  border: 1.5px solid #e2e8f0 !important;
+}
+
+.cr80-id-badge {
+  border-radius: 4px !important;
+  font-family: var(--font-mono) !important;
+  background: #090e1a !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* ── Mobile Tab Bar & Drawer Modernization ── */
+.mobile-bottom-nav {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-top: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.04);
+}
+
+.mobile-nav-tab.active {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  position: relative;
+}
+
+.mobile-nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.scan-bubble {
+  background: linear-gradient(135deg, #090e1a 0%, #1e293b 100%) !important;
+  box-shadow: 0 6px 16px rgba(9, 14, 26, 0.35), 0 0 0 2px #ffffff !important;
+  transition: transform 0.15s ease;
+}
+
+.scan-bubble:active {
+  transform: scale(0.92);
+}
+
+/* ── Micro-Interaction Scale on Buttons ── */
+button:active:not(:disabled),
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Smooth Focus Ring for Inputs */
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
 }

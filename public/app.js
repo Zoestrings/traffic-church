@@ -295,8 +295,8 @@ function render() {
 // --- 1. LOGIN VIEW ---
 function renderLoginView(container) {
   container.innerHTML = `
-    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #090d16; padding: 20px;">
-      <div style="width: 100%; max-width: 420px; background: #ffffff; border-radius: 12px; border: 1px solid #1e293b; padding: 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.4);">
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 25%, #1e293b 0%, #090e1a 100%); padding: 24px 16px;">
+      <div style="width: 100%; max-width: 430px; background: #ffffff; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.12); padding: 36px 32px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06);">
         <div style="margin-bottom: 24px; text-align: left;">
           <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; font-size: 16px; margin-bottom: 14px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
             GCI
@@ -611,6 +611,32 @@ async function loadDashboardView(container) {
               ${renderAvatar(state.user?.photo_url, state.user?.full_name || greetingName, 38)}
             </div>
           </div>
+        </div>
+
+        <!-- SENIOR DEVELOPER QUICK ACTION LAUNCHER BAR -->
+        <div class="quick-actions-bar">
+          <button class="quick-action-btn primary" onclick="navigate('scan')">
+            <i data-lucide="scan-line" style="width: 15px; height: 15px; color: #10b981;"></i>
+            <span>Scan ID Card</span>
+          </button>
+          <button class="quick-action-btn" onclick="navigate('attendance')">
+            <i data-lucide="clipboard-check" style="width: 15px; height: 15px; color: #059669;"></i>
+            <span>Roll-Call Register</span>
+          </button>
+          ${['super_admin', 'identity_manager'].includes(state.role) ? `
+            <button class="quick-action-btn" onclick="navigate('register')">
+              <i data-lucide="user-plus" style="width: 15px; height: 15px; color: #2563eb;"></i>
+              <span>Register Member</span>
+            </button>
+          ` : ''}
+          <button class="quick-action-btn" onclick="navigate('cards')">
+            <i data-lucide="printer" style="width: 15px; height: 15px; color: #7c3aed;"></i>
+            <span>Print Badges</span>
+          </button>
+          <button class="quick-action-btn" onclick="navigate('directory')">
+            <i data-lucide="users" style="width: 15px; height: 15px; color: #475569;"></i>
+            <span>People Directory</span>
+          </button>
         </div>
 
         <!-- ROW 1: 4 STAT METRIC CARDS -->
@@ -3256,7 +3282,7 @@ async function renderAttendanceRegisterView(container) {
         ${activeSession ? `
           <div class="attendance-live-banner">
             <div>
-              <div class="live-event-pill">LIVE EVENT</div>
+              <div class="live-event-pill"><span class="status-dot-pulse"></span> LIVE EVENT</div>
               <div style="font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; font-family: var(--font-display); text-transform: uppercase;">
                 ${escapeHtml(activeSession.event_name)}
               </div>
@@ -3311,8 +3337,8 @@ async function renderAttendanceRegisterView(container) {
 
           <!-- Desktop View Table -->
           <div class="desktop-table-view" style="overflow-x: auto;">
-            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
-              <thead>
+            <table class="data-table" style="width: 100%; border-collapse: separate; border-spacing: 0; text-align: left;">
+              <thead class="sticky-table-head">
                 <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">
                   <th style="padding: 12px 18px;">Date &amp; Time &gt;</th>
                   <th style="padding: 12px 18px;">Event Name</th>
