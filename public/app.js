@@ -1531,7 +1531,7 @@ async function fetchDirectoryList() {
             <tr>
               <td>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <img src="${p.photo_url || 'https://via.placeholder.com/80'}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: #e2e8f0;" />
+                  ${renderAvatar(p.photo_url, (p.title ? p.title + ' ' : '') + p.full_name, 34)}
                   <div>
                     <strong>${p.title ? p.title + ' ' : ''}${p.full_name}</strong>
                     <div style="font-size: 11px; color: var(--text-muted);">${p.position || 'Member'}</div>
@@ -1628,7 +1628,7 @@ async function openIdentityModal(personId) {
     body.innerHTML = `
       <div id="modalProfileView">
         <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: center;">
-          <img src="${p.photo_url || 'https://via.placeholder.com/100'}" style="width: 72px; height: 72px; border-radius: 6px; object-fit: cover; background: #e2e8f0; border: 2px solid #cbd5e1;" />
+          ${renderAvatar(p.photo_url, (p.title ? p.title + ' ' : '') + p.full_name, 72)}
           <div>
             <div style="font-size: 16px; font-weight: 700;">${p.full_name}</div>
             <div style="font-size: 12px; color: var(--accent-blue); font-weight: 600;">${p.position || 'Member'} &bull; ${p.department || 'General'}</div>
