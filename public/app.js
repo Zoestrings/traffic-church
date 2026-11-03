@@ -1041,13 +1041,13 @@ function loadScannerView(container) {
     </div>
 
     <div class="scanner-container">
-      <div class="card" style="padding: 24px;">
+      <div id="scannerCard" class="card" style="padding: 24px;">
         <div id="cameraInstructions" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
           Point your rear camera at the QR code on the ID badge.
           On <strong>iPhone / Safari</strong>, use the <strong>Photo Scan</strong> button below if live camera doesn't start.
         </div>
 
-        <div id="qrReader" style="margin: 0 auto; min-height: 280px; display: flex; align-items: center; justify-content: center; background: #000000; color: #ffffff;">
+        <div id="qrReader" style="margin: 0 auto; min-height: 60px; display: flex; align-items: center; justify-content: center; background: transparent; color: #ffffff;">
           <button class="btn btn-accent" id="startScanBtn">
             <i data-lucide="camera"></i> Open Camera Scanner
           </button>
@@ -1167,6 +1167,8 @@ async function startCameraScanner() {
 
   if (startBtn) startBtn.style.display = 'none';
   if (stopBtn) stopBtn.style.display = 'inline-flex';
+  // Make the reader div black and full-height only when camera is streaming
+  if (readerDiv) { readerDiv.style.background = '#000000'; readerDiv.style.minHeight = '280px'; }
 
   const config = {
     fps: 10,
@@ -1259,12 +1261,19 @@ async function stopCameraScanner() {
     const stopBtn = document.getElementById('stopScanBtn');
     if (startBtn) startBtn.style.display = 'inline-flex';
     if (stopBtn) stopBtn.style.display = 'none';
+    // Restore transparent background when camera is not streaming
+    const rd = document.getElementById('qrReader');
+    if (rd) { rd.style.background = 'transparent'; rd.style.minHeight = '60px'; }
   }
 }
 
 async function verifyToken(token) {
   const resultArea = document.getElementById('verificationResultArea');
   if (!resultArea) return;
+
+  // ─── Hide scanner UI immediately so it does not overlap the result ───
+  const scannerCard = document.getElementById('scannerCard');
+  if (scannerCard) scannerCard.style.display = 'none';
 
   resultArea.innerHTML = `
     <div class="card" style="padding: 24px; text-align: center;">
@@ -1378,6 +1387,9 @@ async function renderVerificationProfileCard(container, data) {
           <span>Org: <strong>${data.organisation.name}</strong></span>
           <span>Verified At: ${new Date(data.timestamp).toLocaleTimeString()}</span>
         </div>
+
+        <!-- Scan Another button: restores scanner UI without a full page reload -->
+        <button onclick="(function(){ const sc = document.getElementById('scannerCard'); const ra = document.getElementById('verificationResultArea'); if(sc){ sc.style.display = ''; } if(ra){ ra.innerHTML = ''; } })()" style="margin-top: 14px; width: 100%; padding: 10px; background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: 0.3px;">&#8592; Scan Another Card</button>
       </div>
     </div>
   `;
