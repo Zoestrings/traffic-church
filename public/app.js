@@ -1342,7 +1342,7 @@ async function renderVerificationProfileCard(container, data) {
 
       <div style="padding: 20px;">
         <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle);">
-          <img src="${data.identity.photoUrl || 'https://via.placeholder.com/100'}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e1; background: #f1f5f9;" />
+          ${renderAvatar(data.identity.photoUrl || data.identity.photo_url, data.identity.fullName || data.identity.full_name, 70)}
           <div>
             <div style="font-size: 17px; font-weight: 700; color: #0f172a;">
               ${data.identity.title ? data.identity.title + ' ' : ''}${data.identity.fullName}
@@ -3480,9 +3480,7 @@ async function loadAttendanceLogs() {
             </td>
             <td style="padding: 14px 18px;">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: ${bg}; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">
-                  ${initials}
-                </div>
+                ${renderAvatar(log.photo_url || log.photoUrl, log.full_name, 34)}
                 <div>
                   <div style="font-weight: 700; color: #0f172a; font-size: 13px;">${escapeHtml(log.full_name)}</div>
                   <div style="font-size: 11px; color: #64748b; margin-top: 1px;">${escapeHtml(log.position || log.role || 'Operations Commander')}</div>
@@ -3526,9 +3524,7 @@ async function loadAttendanceLogs() {
 
         return `
           <div class="mobile-attendance-card">
-            <div style="width: 40px; height: 40px; border-radius: 50%; background: ${bg}; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0;">
-              ${initials}
-            </div>
+            ${renderAvatar(log.photo_url || log.photoUrl, log.full_name, 40)}
             <div class="mobile-attendance-info">
               <div class="mobile-attendance-name">${escapeHtml(log.full_name)}</div>
               <div style="font-size: 11px; color: #64748b;">${escapeHtml(log.position || 'Operations Commander')}</div>
