@@ -1464,8 +1464,8 @@ async function loadDirectoryView(container) {
     <div class="modal-overlay" id="identityModal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h2 style="font-size: 15px; font-weight: 600;" id="modalPersonName">Identity Record</h2>
-          <button onclick="closeIdentityModal()" style="background: none; border: none; font-size: 16px; cursor: pointer;">✕</button>
+          <h2 style="font-size: 15px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em;" id="modalPersonName">Identity Record</h2>
+          <button onclick="closeIdentityModal()" style="width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9; border: none; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.15s ease;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a'" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'">&#x2715;</button>
         </div>
         <div class="modal-body" id="modalPersonBody"></div>
         <div class="modal-footer" id="modalPersonFooter"></div>
@@ -1595,6 +1595,44 @@ function changeDirPage(newPage) {
   fetchDirectoryList();
 }
 
+async function handleDirectPhotoUpload(personId, inputEl) {
+  if (!inputEl.files || !inputEl.files[0]) return;
+  const file = inputEl.files[0];
+  const statusEl = document.getElementById('quickUploadStatus');
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.style.color = '#2563eb';
+    statusEl.textContent = 'Uploading photo...';
+  }
+
+  const formData = new FormData();
+  formData.append('photo', file);
+  formData.append('reason', 'Direct portrait upload via identity modal');
+
+  try {
+    const res = await fetch(`/api/identities/${personId}`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders() },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to upload photograph');
+
+    if (statusEl) {
+      statusEl.style.color = '#10b981';
+      statusEl.textContent = '✓ Photo updated successfully!';
+    }
+    setTimeout(() => {
+      openIdentityModal(personId);
+      if (typeof fetchDirectoryList === 'function') fetchDirectoryList();
+    }, 800);
+  } catch (err) {
+    if (statusEl) {
+      statusEl.style.color = '#e11d48';
+      statusEl.textContent = 'Upload failed: ' + err.message;
+    }
+  }
+}
 async function openIdentityModal(personId) {
   const modal = document.getElementById('identityModal');
   const body = document.getElementById('modalPersonBody');
@@ -1627,31 +1665,47 @@ async function openIdentityModal(personId) {
 
     body.innerHTML = `
       <div id="modalProfileView">
-        <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: center;">
-          ${renderAvatar(p.photo_url, (p.title ? p.title + ' ' : '') + p.full_name, 72)}
-          <div>
-            <div style="font-size: 16px; font-weight: 700;">${p.full_name}</div>
-            <div style="font-size: 12px; color: var(--accent-blue); font-weight: 600;">${p.position || 'Member'} &bull; ${p.department || 'General'}</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Branch: <strong>${p.branch || 'Main Sanctuary'}</strong></div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Permanent ID: <code style="font-weight: 700;">${p.id_number}</code> &bull; Status: <span class="badge ${p.status === 'active' ? 'badge-verified' : 'badge-neutral'}">${p.status}</span></div>
+        <!-- Hero Personnel Profile Header with 1-Click Photo Upload -->
+        <div style="display: flex; gap: 18px; align-items: center; padding: 16px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 20px;">
+          <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="document.getElementById('quickModalPhotoInput').click()" title="Click to upload or replace photo">
+            ${renderAvatar(p.photo_url, (p.title ? p.title + ' ' : '') + p.full_name, 76)}
+            <div style="position: absolute; bottom: -2px; right: -2px; width: 26px; height: 26px; background: #0f172a; border: 2px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 11px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              <i data-lucide="camera" style="width: 12px; height: 12px;"></i>
+            </div>
+            <input type="file" id="quickModalPhotoInput" accept="image/*" style="display: none;" onchange="handleDirectPhotoUpload(${p.id}, this)" />
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <div style="font-size: 17px; font-weight: 800; color: #0f172a; letter-spacing: -0.01em;">${p.full_name}</div>
+              <span class="badge ${p.status === 'active' ? 'badge-verified' : 'badge-neutral'}" style="font-size: 10px; padding: 2px 8px; border-radius: 9999px;">${p.status.toUpperCase()}</span>
+            </div>
+            <div style="font-size: 12.5px; color: #2563eb; font-weight: 600; margin-top: 3px;">
+              ${escapeHtml(p.position || 'Member')} &bull; ${escapeHtml(p.department || 'General')}
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
+              Branch: <strong>${escapeHtml(p.branch || 'Main Sanctuary')}</strong> &bull; ID: <code style="font-family: var(--font-data); font-size: 11.5px; font-weight: 700; color: #0f172a; background: #e2e8f0; padding: 1px 6px; border-radius: 4px;">${escapeHtml(p.id_number)}</code>
+            </div>
+            <div id="quickUploadStatus" style="font-size: 11px; margin-top: 6px; font-weight: 600; display: none;"></div>
           </div>
         </div>
 
         <div style="margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
           <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Issued Credentials & Physical Cards (${cards.length})</h3>
-          <div style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;">
+          <div style="display: flex; flex-direction: column; gap: 8px; max-height: 175px; overflow-y: auto; padding-right: 2px;">
             ${cards.map(c => `
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border-subtle); font-size: 12px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
                 <div>
-                  <strong>${c.card_number}</strong>
-                  ${c.is_current ? '<span class="badge badge-verified" style="margin-left: 6px;">CURRENT</span>' : ''}
-                  <div style="font-size: 11px; color: var(--text-muted);">Issued: ${c.issue_date?.split('T')[0]} &bull; Token: ${c.verification_token.substring(0, 10)}...</div>
-                  ${c.revocation_reason ? `<div style="font-size: 11px; color: var(--status-revoked);">Reason: ${c.revocation_reason}</div>` : ''}
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-weight: 700; color: #0f172a; font-family: var(--font-data);">${c.card_number}</span>
+                    ${c.is_current ? '<span style="background: #ecfdf5; color: #059669; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; border: 1px solid #a7f3d0;">CURRENT</span>' : ''}
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Issued: ${c.issue_date ? c.issue_date.split('T')[0] : '-'} &bull; Token: <span style="font-family: var(--font-mono); font-size: 10.5px;">${c.verification_token.substring(0, 10)}...</span></div>
+                  ${c.revocation_reason ? `<div style="font-size: 11px; color: #e11d48; margin-top: 2px; font-weight: 500;">Reason: ${escapeHtml(c.revocation_reason)}</div>` : ''}
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span class="badge ${c.status === 'active' ? 'badge-verified' : (c.status === 'revoked' ? 'badge-revoked' : 'badge-neutral')}">${c.status}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="badge ${c.status === 'active' ? 'badge-verified' : (c.status === 'revoked' ? 'badge-revoked' : 'badge-neutral')}" style="font-size: 10.5px; padding: 2px 8px; border-radius: 9999px;">${c.status}</span>
                   ${c.status === 'active' && ['super_admin', 'identity_manager'].includes(state.role) ? `
-                    <button class="btn btn-danger btn-sm" onclick="revokeCard(${c.id}, ${p.id})">Revoke</button>
+                    <button class="btn btn-danger btn-sm" style="padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 6px;" onclick="revokeCard(${c.id}, ${p.id})">Revoke</button>
                   ` : ''}
                 </div>
               </div>
@@ -1727,16 +1781,16 @@ async function openIdentityModal(personId) {
     `;
 
     footer.innerHTML = `
-      <button class="btn btn-secondary btn-sm" onclick="closeIdentityModal()">Close</button>
-      <button class="btn btn-secondary btn-sm" onclick="navigateToPrintCard(${p.id})">
-        <i data-lucide="printer" style="width: 13px; height: 13px;"></i> Print Badge
+      <button class="btn btn-secondary" onclick="closeIdentityModal()" style="border-radius: 8px; font-weight: 600; font-size: 12.5px; padding: 8px 16px;">Close</button>
+      <button class="btn btn-secondary" onclick="navigateToPrintCard(${p.id})" style="border-radius: 8px; font-weight: 600; font-size: 12.5px; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px;">
+        <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Print Badge
       </button>
       ${['super_admin', 'identity_manager'].includes(state.role) ? `
-        <button class="btn btn-secondary btn-sm" id="btnToggleEditProfile" onclick="toggleEditProfileView(true)">
+        <button class="btn btn-secondary" id="btnToggleEditProfile" onclick="toggleEditProfileView(true)" style="border-radius: 8px; font-weight: 600; font-size: 12.5px; padding: 8px 16px;">
           Edit Personnel Profile
         </button>
-        <button class="btn btn-primary btn-sm" onclick="reissueCard(${p.id})">
-          Reissue New Card
+        <button class="btn btn-primary" onclick="reissueCard(${p.id})" style="background: #090e1a; border-color: #090e1a; color: #ffffff; border-radius: 8px; font-weight: 700; font-size: 12.5px; padding: 8px 18px; box-shadow: 0 4px 12px rgba(9, 14, 26, 0.25);">
+          + Reissue New Card
         </button>
       ` : ''}
     `;
