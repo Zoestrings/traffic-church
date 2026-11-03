@@ -484,7 +484,7 @@ function renderAppShell(container) {
     </div>
   `;
 
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   renderCurrentRoute();
 }
 
@@ -806,7 +806,7 @@ async function loadDashboardView(container) {
       </div>
     `;
 
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   } catch (err) {
     container.innerHTML = `
       <div class="widget-card" style="border-left: 4px solid #ef4444; padding: 24px;">
@@ -973,7 +973,7 @@ function promptStartAttendanceSession() {
     </div>
   `;
   document.body.insertAdjacentHTML('beforeend', modalHtml);
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   const input = document.getElementById('heliosEventNameInput');
   if (input) input.focus();
 }
@@ -1082,7 +1082,7 @@ function loadScannerView(container) {
       <div id="verificationResultArea"></div>
     </div>
   `;
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 
   const startBtn = document.getElementById('startScanBtn');
   const stopBtn = document.getElementById('stopScanBtn');
@@ -1300,7 +1300,21 @@ async function verifyToken(token) {
         </div>
       </div>
     `;
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+  }
+}
+
+function resetAndRestartScanner() {
+  const sc = document.getElementById('scannerCard');
+  const ra = document.getElementById('verificationResultArea');
+  if (ra) ra.innerHTML = '';
+  if (sc) {
+    sc.style.display = '';
+    const tokenInput = document.getElementById('manualTokenInput');
+    if (tokenInput) tokenInput.value = '';
+    setScannerStatus('STANDBY', 'Ready. Tap Open Camera Scanner to begin.');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    startCameraScanner().catch(() => {});
   }
 }
 
@@ -1393,11 +1407,11 @@ async function renderVerificationProfileCard(container, data) {
         </div>
 
         <!-- Scan Another button: restores scanner UI without a full page reload -->
-        <button onclick="(function(){ const sc = document.getElementById('scannerCard'); const ra = document.getElementById('verificationResultArea'); if(sc){ sc.style.display = ''; } if(ra){ ra.innerHTML = ''; } })()" style="margin-top: 14px; width: 100%; padding: 10px; background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: 0.3px;">&#8592; Scan Another Card</button>
+        <button onclick="resetAndRestartScanner()" style="margin-top: 14px; width: 100%; padding: 12px; background: #1e293b; border: 1px solid #334155; color: #ffffff; border-radius: 8px; font-size: 13.5px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s ease;"><i data-lucide='camera'></i> Scan Another Card</button>
       </div>
     </div>
   `;
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
 
 // --- 5. PEOPLE DIRECTORY VIEW ---
@@ -1458,7 +1472,7 @@ async function loadDirectoryView(container) {
       </div>
     </div>
   `;
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 
   document.getElementById('directorySearchBtn').addEventListener('click', () => {
     directoryPage = 1;
@@ -2007,7 +2021,7 @@ function renderRegistrationSuccess(container, result, isPublic = false) {
       </div>
     </div>
   `;
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
 
 // Public Member Self-Registration Portal (No login required)
@@ -2405,7 +2419,7 @@ async function loadCardsManagementView(container) {
       <div style="text-align: center; color: var(--text-muted); padding: 40px;">Select a person above to preview their printable badge.</div>
     </div>
   `;
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 
   try {
     const data = await api('/api/identities?limit=100');
@@ -2713,7 +2727,7 @@ async function renderEnrollmentQRView(container) {
       </div>
     </div>
   `;
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 
   try {
     const res = await api('/api/public/registration-qr');
@@ -2733,7 +2747,7 @@ async function renderEnrollmentQRView(container) {
     testBtn.href = res.url;
     window._currentEnrollmentUrl = res.url;
     window._currentEnrollmentQr = res.qrImage;
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   } catch (err) {
     const loadEl = document.getElementById('enrollmentQrLoading');
     if (loadEl) {
@@ -3344,7 +3358,7 @@ async function renderAttendanceRegisterView(container) {
     </div>
   `;
 
-  if (window.lucide) lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 
   await loadAttendanceLogs();
 }
@@ -3565,7 +3579,7 @@ async function loadAttendanceLogs() {
       `).join('');
     }
 
-    if (window.lucide) lucide.createIcons();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 
     // 4. Live Polling every 30 seconds while on attendance view
     if (!window.__attendancePollInterval && state.currentRoute === 'attendance') {

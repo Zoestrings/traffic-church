@@ -15,6 +15,13 @@
   <!-- HTML5-QRCode Scanner -->
   <script src="https://unpkg.com/html5-qrcode" defer></script>
   <style>
+    /* Global Mobile Touch Optimization for Instant Tap Response */
+    button, .btn, a, input[type="button"], input[type="submit"], .mobile-nav-tab, .nav-item, [onclick] {
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      user-select: none;
+    }
+
     :root {
       /* Refined Canvas & Panel Palette */
       --bg-main: #f8fafc;
