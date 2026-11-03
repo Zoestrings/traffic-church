@@ -1041,43 +1041,49 @@ function loadScannerView(container) {
     </div>
 
     <div class="scanner-container">
-      <div id="scannerCard" class="card" style="padding: 24px;">
-        <div id="cameraInstructions" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          Point your rear camera at the QR code on the ID badge.
-          On <strong>iPhone / Safari</strong>, use the <strong>Photo Scan</strong> button below if live camera doesn't start.
+      <div id="scannerCard" class="card" style="padding: 24px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+        <div id="cameraInstructions" style="font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.5;">
+          Point the rear camera at the official badge QR code. Instant attendance log initiates on scan.
         </div>
 
-        <div id="qrReader" style="margin: 0 auto; min-height: 60px; display: flex; align-items: center; justify-content: center; background: transparent; color: #ffffff;">
-          <button class="btn btn-accent" id="startScanBtn">
-            <i data-lucide="camera"></i> Open Camera Scanner
-          </button>
+        <!-- Camera Viewport with Futuristic HUD Overlay -->
+        <div class="scanner-hud-container" id="scannerHudWrapper">
+          <div class="scanner-hud-reticle" id="scannerReticle" style="display: none;">
+            <div class="scanner-hud-reticle-tr"></div>
+            <div class="scanner-hud-reticle-bl"></div>
+            <div class="scanner-laser-line"></div>
+          </div>
+          <div id="qrReader" style="margin: 0 auto; min-height: 60px; display: flex; align-items: center; justify-content: center; background: transparent; color: #ffffff; border-radius: 10px; overflow: hidden;">
+            <button class="btn btn-accent" id="startScanBtn" style="padding: 12px 24px; font-weight: 700; border-radius: 10px; background: #059669; border: none; color: #ffffff; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);">
+              <i data-lucide="camera" style="width: 18px; height: 18px;"></i> Open Live Camera Scanner
+            </button>
+          </div>
         </div>
 
-        <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center;">
-          <button class="btn btn-secondary btn-sm" id="stopScanBtn" style="display: none;">
+        <div style="margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center;">
+          <button class="btn btn-secondary btn-sm" id="stopScanBtn" style="display: none; border-radius: 8px;">
             <i data-lucide="camera-off"></i> Stop Camera
           </button>
 
-          <!-- iOS / Safari fallback: file input opens native camera, scanFile() decodes the photo -->
-          <label id="photoScanLabel" class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Take a photo of the QR code (best for iPhone / Safari)">
-            <i data-lucide="image"></i> Photo Scan (iOS)
+          <!-- iOS / Android native camera capture fallback -->
+          <label id="photoScanLabel" class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;" title="Snap a photo using native camera">
+            <i data-lucide="image"></i> Photo Scan (iOS / Android)
             <input type="file" id="qrPhotoInput" accept="image/*" capture="environment" style="display: none;" />
           </label>
         </div>
 
         <!-- Live status message -->
-        <p id="scanner-msg" style="margin-top: 14px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); text-align: center; min-height: 18px;">Ready. Grant camera permission then tap Open Camera Scanner.</p>
+        <p id="scanner-msg" style="margin-top: 14px; font-family: var(--font-mono); font-size: 11.5px; color: #64748b; text-align: center; min-height: 18px;">Ready. Tap Open Live Camera Scanner to begin.</p>
 
         <!-- Manual Lookup Fallback -->
-        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-subtle); text-align: left;">
-          <label class="form-label">Manual Token / ID Verification Fallback</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="manualTokenInput" class="form-control" placeholder="Paste 48-char verification token..." />
-            <button class="btn btn-primary" id="manualVerifyBtn">Verify</button>
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: left;">
+          <label class="form-label" style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">Manual Token / ID Verification</label>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input type="text" id="manualTokenInput" class="form-control" placeholder="Paste 48-char token or member ID..." style="border-radius: 8px; font-size: 13px;" />
+            <button class="btn btn-primary" id="manualVerifyBtn" style="border-radius: 8px; font-weight: 700; padding: 0 20px;">Verify</button>
           </div>
         </div>
       </div>
-
       <!-- Verification Result Render Area -->
       <div id="verificationResultArea"></div>
     </div>
@@ -1169,6 +1175,7 @@ async function startCameraScanner() {
   if (stopBtn) stopBtn.style.display = 'inline-flex';
   // Make the reader div black and full-height only when camera is streaming
   if (readerDiv) { readerDiv.style.background = '#000000'; readerDiv.style.minHeight = '280px'; }
+  const reticle = document.getElementById('scannerReticle'); if (reticle) reticle.style.display = 'block';
 
   const config = {
     fps: 15,
@@ -1268,6 +1275,7 @@ async function stopCameraScanner() {
     // Restore transparent background when camera is not streaming
     const rd = document.getElementById('qrReader');
     if (rd) { rd.style.background = 'transparent'; rd.style.minHeight = '60px'; }
+    const reticle = document.getElementById('scannerReticle'); if (reticle) reticle.style.display = 'none';
   }
 }
 

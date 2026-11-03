@@ -15,6 +15,110 @@
   <!-- HTML5-QRCode Scanner -->
   <script src="https://unpkg.com/html5-qrcode" defer></script>
   <style>
+    /* =====================================================
+       PREMIUM HIGH-TECH CAMERA SCANNER HUD
+       ===================================================== */
+    .scanner-hud-container {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #090e1a;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      padding: 6px;
+      margin: 12px 0 18px 0;
+    }
+
+    .scanner-hud-reticle {
+      position: absolute;
+      inset: 20px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .scanner-hud-reticle::before,
+    .scanner-hud-reticle::after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-color: #10b981;
+      border-style: solid;
+      pointer-events: none;
+    }
+
+    .scanner-hud-reticle::before {
+      top: 0;
+      left: 0;
+      border-width: 3px 0 0 3px;
+      border-top-left-radius: 6px;
+    }
+
+    .scanner-hud-reticle::after {
+      bottom: 0;
+      right: 0;
+      border-width: 0 3px 3px 0;
+      border-bottom-right-radius: 6px;
+    }
+
+    .scanner-hud-reticle-tr,
+    .scanner-hud-reticle-bl {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-color: #10b981;
+      border-style: solid;
+      pointer-events: none;
+    }
+
+    .scanner-hud-reticle-tr {
+      top: 0;
+      right: 0;
+      border-width: 3px 3px 0 0;
+      border-top-right-radius: 6px;
+    }
+
+    .scanner-hud-reticle-bl {
+      bottom: 0;
+      left: 0;
+      border-width: 0 0 3px 3px;
+      border-bottom-left-radius: 6px;
+    }
+
+    .scanner-laser-line {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #10b981, #6ee7b7, #10b981, transparent);
+      box-shadow: 0 0 12px #10b981, 0 0 24px #10b981;
+      z-index: 12;
+      pointer-events: none;
+      animation: laserSweep 2.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes laserSweep {
+      0% { top: 15%; opacity: 0.2; }
+      50% { opacity: 1; }
+      100% { top: 85%; opacity: 0.2; }
+    }
+
+    /* Modern Table Hover & Elevation */
+    .table tbody tr {
+      transition: background-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .table tbody tr:hover {
+      background-color: #f8fafc !important;
+    }
+
+    /* Smooth Button Press Micro-interaction */
+    .btn {
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .btn:active {
+      transform: scale(0.97) !important;
+    }
     /* Global Mobile Touch Optimization for Instant Tap Response */
     button, .btn, a, input[type="button"], input[type="submit"], .mobile-nav-tab, .nav-item, [onclick] {
       touch-action: manipulation !important;
