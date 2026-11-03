@@ -1171,8 +1171,12 @@ async function startCameraScanner() {
   if (readerDiv) { readerDiv.style.background = '#000000'; readerDiv.style.minHeight = '280px'; }
 
   const config = {
-    fps: 10,
-    qrbox: { width: 220, height: 220 },
+    fps: 15,
+    qrbox: (viewfinderWidth, viewfinderHeight) => {
+      const minDim = Math.min(viewfinderWidth, viewfinderHeight);
+      const edge = Math.floor(minDim * 0.72);
+      return { width: Math.max(edge, 200), height: Math.max(edge, 200) };
+    },
     // iOS Safari needs videoConstraints to be minimal — no exact constraints
     videoConstraints: {
       facingMode: { ideal: 'environment' }
